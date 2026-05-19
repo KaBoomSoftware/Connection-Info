@@ -1,8 +1,13 @@
 package cz.kaboom.connectioninfo.feature.main
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -74,6 +79,7 @@ fun ConnectionInfoApp(
     onAction: (MainAction) -> Unit
 ) {
     val swipeThresholdPx = with(LocalDensity.current) { TabSwipeThreshold.toPx() }
+    val selectedTab = state.selectedTab
 
     Column(
         modifier = Modifier
@@ -90,7 +96,7 @@ fun ConnectionInfoApp(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .pointerInput(state.selectedTab, swipeThresholdPx) {
+                .pointerInput(selectedTab, swipeThresholdPx) {
                     var dragDistance = 0f
                     detectHorizontalDragGestures(
                         onDragStart = { dragDistance = 0f },
@@ -99,10 +105,10 @@ fun ConnectionInfoApp(
                         },
                         onDragEnd = {
                             val targetTab = when {
-                                dragDistance < -swipeThresholdPx && state.selectedTab == MainTab.SPEED_TEST ->
+                                dragDistance < -swipeThresholdPx && selectedTab == MainTab.SPEED_TEST ->
                                     MainTab.NETWORK_INFO
 
-                                dragDistance > swipeThresholdPx && state.selectedTab == MainTab.NETWORK_INFO ->
+                                dragDistance > swipeThresholdPx && selectedTab == MainTab.NETWORK_INFO ->
                                     MainTab.SPEED_TEST
 
                                 else -> null
@@ -115,16 +121,36 @@ fun ConnectionInfoApp(
                     )
                 }
         ) {
-            when (state.selectedTab) {
-                MainTab.SPEED_TEST -> SpeedTestScreen(
-                    state = state.speedTest,
-                    internetAvailable = state.internetAvailable,
-                    onToggleTest = { onAction(MainAction.ToggleSpeedTest) }
-                )
+            AnimatedContent(
+                targetState = selectedTab,
+                transitionSpec = {
+                    val direction = if (targetState.index > initialState.index) {
+                        AnimatedContentTransitionScope.SlideDirection.Left
+                    } else {
+                        AnimatedContentTransitionScope.SlideDirection.Right
+                    }
 
-                MainTab.NETWORK_INFO -> NetworkInfoScreen(
-                    info = if (state.internetAvailable) state.networkInfo else null
-                )
+                    slideIntoContainer(
+                        towards = direction,
+                        animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing)
+                    ) togetherWith slideOutOfContainer(
+                        towards = direction,
+                        animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing)
+                    ) using SizeTransform(clip = false)
+                },
+                label = "tabContentTransition"
+            ) { tab ->
+                when (tab) {
+                    MainTab.SPEED_TEST -> SpeedTestScreen(
+                        state = state.speedTest,
+                        internetAvailable = state.internetAvailable,
+                        onToggleTest = { onAction(MainAction.ToggleSpeedTest) }
+                    )
+
+                    MainTab.NETWORK_INFO -> NetworkInfoScreen(
+                        info = if (state.internetAvailable) state.networkInfo else null
+                    )
+                }
             }
         }
 
@@ -139,6 +165,12 @@ fun ConnectionInfoApp(
         )
     }
 }
+
+private val MainTab.index: Int
+    get() = when (this) {
+        MainTab.SPEED_TEST -> 0
+        MainTab.NETWORK_INFO -> 1
+    }
 
 @Composable
 private fun AppTabs(
