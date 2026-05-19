@@ -1,0 +1,16 @@
+<resources>
+
+    <style name="AppLaunchTheme" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">@font/roboto</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowBackground">@color/ic_launcher_background</item>
+        <item name="android:colorAccent">@color/colorPrimary</item>
+        <item name="android:statusBarColor">@color/ic_launcher_background</item>
+        <item name="android:navigationBarColor">@color/ic_launcher_background</item>
+        <item name="android:windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/ic_launcher_background</item>
+    </style>
+
+</resources>
