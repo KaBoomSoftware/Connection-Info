@@ -53,6 +53,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -76,6 +77,12 @@ import kotlin.math.min
 
 /** Minimum horizontal drag distance required to switch tabs. */
 private val TabSwipeThreshold = 72.dp
+
+/** Values at or above this Mbps threshold are shown as Gbps in table cells. */
+private const val SPEED_GBPS_THRESHOLD_MBPS = 1_000f
+
+/** Long table values use a smaller font to stay on one line on compact screens. */
+private const val LONG_SPEED_VALUE_LENGTH = 9
 
 /** Responsive sizing values for compact phones, regular phones, and expanded devices. */
 private data class MainLayoutSpec(
@@ -113,6 +120,7 @@ private data class MainLayoutSpec(
     val statsHeaderTextSize: TextUnit,
     val statsLabelTextSize: TextUnit,
     val statsValueTextSize: TextUnit,
+    val statsValueCompactTextSize: TextUnit,
     val buttonHeight: Dp,
     val actionTopPadding: Dp,
     val actionTextSize: TextUnit,
@@ -166,6 +174,7 @@ private fun mainLayoutSpec(maxWidth: Dp, maxHeight: Dp): MainLayoutSpec {
             statsHeaderTextSize = 11.sp,
             statsLabelTextSize = 14.sp,
             statsValueTextSize = 10.sp,
+            statsValueCompactTextSize = 8.sp,
             buttonHeight = 52.dp,
             actionTopPadding = 14.dp,
             actionTextSize = 13.sp,
@@ -213,6 +222,7 @@ private fun mainLayoutSpec(maxWidth: Dp, maxHeight: Dp): MainLayoutSpec {
             statsHeaderTextSize = 13.sp,
             statsLabelTextSize = 16.sp,
             statsValueTextSize = 11.sp,
+            statsValueCompactTextSize = 9.sp,
             buttonHeight = 64.dp,
             actionTopPadding = 22.dp,
             actionTextSize = 14.sp,
@@ -260,6 +270,7 @@ private fun mainLayoutSpec(maxWidth: Dp, maxHeight: Dp): MainLayoutSpec {
             statsHeaderTextSize = 12.sp,
             statsLabelTextSize = 15.sp,
             statsValueTextSize = 11.sp,
+            statsValueCompactTextSize = 9.sp,
             buttonHeight = 58.dp,
             actionTopPadding = 18.dp,
             actionTextSize = 14.sp,
@@ -471,6 +482,7 @@ private fun SpeedTestScreen(
     layoutSpec: MainLayoutSpec
 ) {
     val speedFormat = stringResource(R.string.speed_format)
+    val speedGbpsFormat = stringResource(R.string.speed_gbps_format)
     val latencyFormat = stringResource(R.string.latency_format)
     val progressText = when (state.phase) {
         SpeedTestPhase.PING -> stringResource(R.string.ping_progress_format, state.progress * 100f)
@@ -514,6 +526,7 @@ private fun SpeedTestScreen(
 
             SpeedStatsPanel(
                 speedFormat = speedFormat,
+                speedGbpsFormat = speedGbpsFormat,
                 latencyFormat = latencyFormat,
                 ping = state.ping,
                 download = state.download,
@@ -706,6 +719,7 @@ private fun SpeedGauge(
 @Composable
 private fun SpeedStatsPanel(
     speedFormat: String,
+    speedGbpsFormat: String,
     latencyFormat: String,
     ping: LatencyStats,
     download: SpeedRateStats,
@@ -760,12 +774,14 @@ private fun SpeedStatsPanel(
                 label = stringResource(R.string.download),
                 stats = download,
                 speedFormat = speedFormat,
+                speedGbpsFormat = speedGbpsFormat,
                 layoutSpec = layoutSpec
             )
             SpeedStatsRow(
                 label = stringResource(R.string.upload),
                 stats = upload,
                 speedFormat = speedFormat,
+                speedGbpsFormat = speedGbpsFormat,
                 layoutSpec = layoutSpec
             )
         }
@@ -863,6 +879,7 @@ private fun SpeedStatsRow(
     label: String,
     stats: SpeedRateStats,
     speedFormat: String,
+    speedGbpsFormat: String,
     layoutSpec: MainLayoutSpec
 ) {
     Row(
@@ -879,15 +896,27 @@ private fun SpeedStatsRow(
             modifier = Modifier.width(layoutSpec.statsLabelWidth)
         )
         SpeedValueText(
-            text = stats.current.takeIf { stats.count > 0 }?.let { formatSpeed(it, speedFormat) } ?: "",
+            text = stats.current.formattedSpeedOrEmpty(
+                hasSamples = stats.count > 0,
+                speedFormat = speedFormat,
+                speedGbpsFormat = speedGbpsFormat
+            ),
             layoutSpec = layoutSpec
         )
         SpeedValueText(
-            text = stats.maximum.takeIf { stats.count > 0 }?.let { formatSpeed(it, speedFormat) } ?: "",
+            text = stats.maximum.formattedSpeedOrEmpty(
+                hasSamples = stats.count > 0,
+                speedFormat = speedFormat,
+                speedGbpsFormat = speedGbpsFormat
+            ),
             layoutSpec = layoutSpec
         )
         SpeedValueText(
-            text = stats.average.takeIf { stats.count > 0 }?.let { formatSpeed(it, speedFormat) } ?: "",
+            text = stats.average.formattedSpeedOrEmpty(
+                hasSamples = stats.count > 0,
+                speedFormat = speedFormat,
+                speedGbpsFormat = speedGbpsFormat
+            ),
             layoutSpec = layoutSpec
         )
     }
@@ -899,15 +928,33 @@ private fun RowScope.SpeedValueText(
     text: String,
     layoutSpec: MainLayoutSpec
 ) {
+    val valueTextSize = if (text.length > LONG_SPEED_VALUE_LENGTH) {
+        layoutSpec.statsValueCompactTextSize
+    } else {
+        layoutSpec.statsValueTextSize
+    }
+
     Text(
         text = text,
         color = ConnectionInfoColors.SpeedValue,
-        fontSize = layoutSpec.statsValueTextSize,
+        fontSize = valueTextSize,
         textAlign = TextAlign.End,
+        maxLines = 1,
+        overflow = TextOverflow.Clip,
+        softWrap = false,
         modifier = Modifier
             .weight(1f)
             .padding(start = 8.dp)
     )
+}
+
+/** Formats a throughput value only after at least one sample has arrived. */
+private fun Float.formattedSpeedOrEmpty(
+    hasSamples: Boolean,
+    speedFormat: String,
+    speedGbpsFormat: String
+): String {
+    return takeIf { hasSamples }?.let { formatSpeed(it, speedFormat, speedGbpsFormat) }.orEmpty()
 }
 
 /** Network information page showing local and public connection metadata. */
@@ -989,8 +1036,16 @@ private fun NetworkInfoRow(
 }
 
 /** Formats Mbps values with the localized string resource pattern. */
-private fun formatSpeed(value: Float, speedFormat: String): String {
-    return String.format(Locale.getDefault(), speedFormat, value)
+private fun formatSpeed(
+    value: Float,
+    speedFormat: String,
+    speedGbpsFormat: String
+): String {
+    return if (value >= SPEED_GBPS_THRESHOLD_MBPS) {
+        String.format(Locale.getDefault(), speedGbpsFormat, value / SPEED_GBPS_THRESHOLD_MBPS)
+    } else {
+        String.format(Locale.getDefault(), speedFormat, value)
+    }
 }
 
 /** Formats latency values with the localized string resource pattern. */
@@ -1041,6 +1096,40 @@ private fun CompactRunningSpeedPreview() {
                     progress = 0.56f,
                     ping = LatencyStats(current = 18f, best = 14f, total = 84f, count = 5),
                     download = SpeedRateStats(current = 327.5f, maximum = 372.1f, total = 980f, count = 3)
+                )
+            ),
+            versionName = "2.0.0",
+            onAction = {}
+        )
+    }
+}
+
+/** Preview that exercises long throughput values on a compact phone. */
+@Preview(widthDp = 360, heightDp = 780)
+@Composable
+private fun CompactHighSpeedPreview() {
+    ConnectionInfoTheme {
+        ConnectionInfoApp(
+            state = MainUiState(
+                internetAvailable = true,
+                speedTest = SpeedTestUiState(
+                    running = true,
+                    phase = SpeedTestPhase.DOWNLOAD,
+                    gaugeValue = 500f,
+                    progress = 0.82f,
+                    ping = LatencyStats(current = 7f, best = 5f, total = 26f, count = 4),
+                    download = SpeedRateStats(
+                        current = 945.73f,
+                        maximum = 1324.91f,
+                        total = 4270.33f,
+                        count = 4
+                    ),
+                    upload = SpeedRateStats(
+                        current = 812.42f,
+                        maximum = 1198.46f,
+                        total = 3014.21f,
+                        count = 4
+                    )
                 )
             ),
             versionName = "2.0.0",

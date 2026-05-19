@@ -3,6 +3,7 @@
     <string name="app_label">Connection Info</string>
     <string name="fun_error">How do you get here?</string>
     <string name="speed_format">%.2f Mbps</string>
+    <string name="speed_gbps_format">%.2f Gbps</string>
     <string name="latency_format">%.0f ms</string>
     <string name="ping_progress_format">Ping test progress: %.0f%%</string>
     <string name="dl_progress_format">Download speed test progress: %.0f%%</string>
