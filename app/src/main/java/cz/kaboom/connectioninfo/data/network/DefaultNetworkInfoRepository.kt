@@ -16,16 +16,26 @@ import java.net.NetworkInterface
 import java.util.Locale
 import javax.inject.Inject
 
+/**
+ * Android-backed implementation that combines local link data with external IP lookup metadata.
+ *
+ * All work is moved to the injected IO dispatcher because it touches platform network interfaces
+ * and performs remote lookups through [NetworkLookupClient].
+ */
 class DefaultNetworkInfoRepository @Inject constructor(
     @ApplicationContext context: Context,
     private val networkLookupClient: NetworkLookupClient,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : NetworkInfoRepository {
 
+    /** Application context retained to avoid leaking an activity. */
     private val appContext = context.applicationContext
+
+    /** Platform service used for validated network state and transport detection. */
     private val connectivityManager =
         appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
+    /** Refreshes all visible network details and wraps failures in [Result]. */
     override suspend fun refresh(): Result<NetworkDetails> = withContext(ioDispatcher) {
         runCatching {
             require(isConnected()) { "Network is unavailable" }
@@ -45,6 +55,7 @@ class DefaultNetworkInfoRepository @Inject constructor(
         }
     }
 
+    /** Confirms that Android currently has a validated internet-capable active network. */
     private fun isConnected(): Boolean {
         val capabilities = connectivityManager.activeNetwork
             ?.let(connectivityManager::getNetworkCapabilities)
@@ -54,6 +65,7 @@ class DefaultNetworkInfoRepository @Inject constructor(
             capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
+    /** Maps platform transport capabilities into the small domain enum shown in the UI. */
     private fun currentTransport(): NetworkTransport {
         val capabilities = connectivityManager.activeNetwork
             ?.let(connectivityManager::getNetworkCapabilities)
@@ -66,6 +78,7 @@ class DefaultNetworkInfoRepository @Inject constructor(
         }
     }
 
+    /** Finds the first non-loopback local address and normalizes IPv6 zone suffixes away. */
     private fun resolveInternalIp(): String {
         return NetworkInterface.getNetworkInterfaces()
             .asSequence()
@@ -77,6 +90,7 @@ class DefaultNetworkInfoRepository @Inject constructor(
             .orEmpty()
     }
 
+    /** Converts the transport DTO into the immutable domain object used by presentation code. */
     private fun NetworkLookupDto.toDomain() = NetworkLookup(
         isp = isp,
         organization = organization,
@@ -89,6 +103,7 @@ class DefaultNetworkInfoRepository @Inject constructor(
         longitude = longitude
     )
 
+    /** Internal validation threshold that filters obviously malformed external IP responses. */
     private companion object {
         const val MIN_IP_LENGTH = 8
     }

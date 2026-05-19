@@ -70,8 +70,15 @@ import cz.kaboom.connectioninfo.ui.theme.ConnectionInfoTheme
 import java.util.Locale
 import kotlin.math.min
 
+/** Minimum horizontal drag distance required to switch tabs. */
 private val TabSwipeThreshold = 72.dp
 
+/**
+ * Root composable for the application.
+ *
+ * It owns the tab chrome, animated page transitions, swipe navigation, and footer version label
+ * while delegating feature content to focused child composables.
+ */
 @Composable
 fun ConnectionInfoApp(
     state: MainUiState,
@@ -166,12 +173,14 @@ fun ConnectionInfoApp(
     }
 }
 
+/** Ordering helper used to choose the animated page transition direction. */
 private val MainTab.index: Int
     get() = when (this) {
         MainTab.SPEED_TEST -> 0
         MainTab.NETWORK_INFO -> 1
     }
 
+/** Top tab row for switching between speed test and network information pages. */
 @Composable
 private fun AppTabs(
     selectedTab: MainTab,
@@ -198,6 +207,7 @@ private fun AppTabs(
     }
 }
 
+/** Single tab label with the active underline affordance. */
 @Composable
 private fun AppTabItem(
     text: String,
@@ -229,6 +239,7 @@ private fun AppTabItem(
     }
 }
 
+/** Speed test page containing the gauge, metric panel, progress copy, and action button. */
 @Composable
 private fun SpeedTestScreen(
     state: SpeedTestUiState,
@@ -334,6 +345,7 @@ private fun SpeedTestScreen(
     }
 }
 
+/** Compact horizontal progress bar used for ping, download, and upload phases. */
 @Composable
 private fun ProgressBar(
     progress: Float,
@@ -356,6 +368,7 @@ private fun ProgressBar(
     }
 }
 
+/** Animated semi-circular gauge for the current Mbps value. */
 @Composable
 private fun SpeedGauge(
     value: Float,
@@ -447,6 +460,7 @@ private fun SpeedGauge(
     }
 }
 
+/** Combined panel showing latency, download, and upload statistics. */
 @Composable
 private fun SpeedStatsPanel(
     speedFormat: String,
@@ -495,6 +509,7 @@ private fun SpeedStatsPanel(
     }
 }
 
+/** Latency summary row with current, best, and average ping values. */
 @Composable
 private fun PingSummaryRow(
     latency: LatencyStats,
@@ -561,6 +576,7 @@ private fun PingSummaryRow(
     }
 }
 
+/** Header text used by the throughput stats table. */
 @Composable
 private fun SpeedHeaderText(text: String, modifier: Modifier = Modifier) {
     Text(
@@ -573,6 +589,7 @@ private fun SpeedHeaderText(text: String, modifier: Modifier = Modifier) {
     )
 }
 
+/** One throughput row for download or upload metrics. */
 @Composable
 private fun SpeedStatsRow(
     label: String,
@@ -598,6 +615,7 @@ private fun SpeedStatsRow(
     }
 }
 
+/** Highlighted numeric value cell inside the throughput stats table. */
 @Composable
 private fun RowScope.SpeedValueText(text: String) {
     Text(
@@ -611,6 +629,7 @@ private fun RowScope.SpeedValueText(text: String) {
     )
 }
 
+/** Network information page showing local and public connection metadata. */
 @Composable
 private fun NetworkInfoScreen(info: NetworkDetails?) {
     Column(
@@ -644,6 +663,7 @@ private fun NetworkInfoScreen(info: NetworkDetails?) {
     }
 }
 
+/** Label/value row used in the Network Info card. */
 @Composable
 private fun NetworkInfoRow(label: String, value: String) {
     Row(
@@ -670,18 +690,22 @@ private fun NetworkInfoRow(label: String, value: String) {
     }
 }
 
+/** Formats Mbps values with the localized string resource pattern. */
 private fun formatSpeed(value: Float, speedFormat: String): String {
     return String.format(Locale.getDefault(), speedFormat, value)
 }
 
+/** Formats latency values with the localized string resource pattern. */
 private fun formatLatency(value: Float, latencyFormat: String): String {
     return String.format(Locale.getDefault(), latencyFormat, value)
 }
 
+/** Formats the central gauge value without units. */
 private fun formatSpeedNumber(value: Float): String {
     return String.format(Locale.getDefault(), "%.2f", value)
 }
 
+/** Preview of the speed screen with representative metrics. */
 @Preview(widthDp = 393, heightDp = 852)
 @Composable
 private fun RunningSpeedPreview() {
@@ -704,6 +728,7 @@ private fun RunningSpeedPreview() {
     }
 }
 
+/** Preview of the network information screen with realistic long IP values. */
 @Preview(widthDp = 393, heightDp = 852)
 @Composable
 private fun NetworkInfoPreview() {

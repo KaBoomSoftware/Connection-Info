@@ -9,9 +9,16 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
 import javax.inject.Inject
 
+/**
+ * Thin Ktor client wrapper for external IP and IP metadata lookups.
+ *
+ * Keeping endpoint-level calls here lets repositories stay focused on composing domain models and
+ * keeps HTTP status validation close to the transport boundary.
+ */
 class NetworkLookupClient @Inject constructor(
     private val client: HttpClient
 ) {
+    /** Fetches the device's public IP address as plain text. */
     suspend fun getMyExternalIp(): String {
         val response = client.get(Const.IPAPI_BASE_URL)
         check(response.status.isSuccess()) {
@@ -20,6 +27,7 @@ class NetworkLookupClient @Inject constructor(
         return response.bodyAsText()
     }
 
+    /** Fetches geolocation and ISP metadata for [ip]. */
     suspend fun getLookupData(ip: String): NetworkLookupDto {
         val response = client.get("${Const.LOOKUP_BASE_URL}$ip")
         check(response.status.isSuccess()) {

@@ -13,9 +13,9 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class ExampleInstrumentedTest {
+    /** Verifies that the instrumented test process resolves the app package context. */
     @Test
     fun useAppContext() {
-        // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
         assertEquals("cz.kaboom.connectioninfo", appContext.packageName)
     }

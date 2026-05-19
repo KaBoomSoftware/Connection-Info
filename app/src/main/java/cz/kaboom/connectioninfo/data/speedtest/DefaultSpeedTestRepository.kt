@@ -34,11 +34,19 @@ import javax.inject.Inject
 import kotlin.math.max
 import kotlin.math.min
 
+/**
+ * Performs the network speed test and streams progress updates as a cold [Flow].
+ *
+ * The implementation runs ping, download, and upload phases sequentially on the IO dispatcher. Ktor
+ * is used for all network calls, and the upload body is streamed to avoid allocating the full
+ * payload in memory.
+ */
 class DefaultSpeedTestRepository @Inject constructor(
     private val client: HttpClient,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : SpeedTestRepository {
 
+    /** Starts a full speed test when collected and cancels network work when the collector stops. */
     override fun runSpeedTest(): Flow<SpeedTestUpdate> = channelFlow {
         val runner = launch(ioDispatcher) {
             try {
@@ -60,6 +68,7 @@ class DefaultSpeedTestRepository @Inject constructor(
         }
     }
 
+    /** Measures request latency using several tiny cache-busted Cloudflare downloads. */
     private suspend fun runPingTest(
         onProgress: (SpeedTestUpdate.Latency) -> Unit
     ) {
@@ -83,6 +92,7 @@ class DefaultSpeedTestRepository @Inject constructor(
         }
     }
 
+    /** Streams a large remote file for a fixed duration and reports calculated throughput. */
     private suspend fun runDownloadTest(
         onProgress: (SpeedTestUpdate.Progress) -> Unit
     ) {
@@ -113,6 +123,7 @@ class DefaultSpeedTestRepository @Inject constructor(
         waitUntilDeadline(SpeedTestPhase.DOWNLOAD, downloadedBytes, startedAt, durationNanos, onProgress)
     }
 
+    /** Streams a generated binary payload and reports upload throughput through Ktor callbacks. */
     private suspend fun runUploadTest(
         onProgress: (SpeedTestUpdate.Progress) -> Unit
     ) {
@@ -133,6 +144,7 @@ class DefaultSpeedTestRepository @Inject constructor(
         waitUntilDeadline(SpeedTestPhase.UPLOAD, uploadedBytes, startedAt, durationNanos, onProgress)
     }
 
+    /** Keeps the current phase visually alive until its configured duration has elapsed. */
     private suspend fun waitUntilDeadline(
         phase: SpeedTestPhase,
         transferredBytes: Long,
@@ -147,6 +159,7 @@ class DefaultSpeedTestRepository @Inject constructor(
         }
     }
 
+    /** Converts transferred bytes and elapsed time into a normalized progress event. */
     private fun progress(
         phase: SpeedTestPhase,
         transferredBytes: Long,
@@ -162,10 +175,20 @@ class DefaultSpeedTestRepository @Inject constructor(
         )
     }
 
+    /**
+     * Streaming request body used by the upload phase.
+     *
+     * Ktor asks this content to write chunks into the request channel, keeping memory usage stable
+     * regardless of [Const.UPLOAD_FILE_SIZE].
+     */
     private class SpeedTestUploadContent : OutgoingContent.WriteChannelContent() {
+        /** Exact payload size sent to the upload endpoint. */
         override val contentLength: Long = Const.UPLOAD_FILE_SIZE.toLong()
+
+        /** Binary payload marker understood by the Cloudflare upload endpoint. */
         override val contentType: ContentType = ContentType.Application.OctetStream
 
+        /** Writes zero-filled chunks until the configured upload size is reached. */
         override suspend fun writeTo(channel: ByteWriteChannel) {
             val buffer = ByteArray(UPLOAD_BUFFER_SIZE)
             var remainingBytes = contentLength
@@ -179,6 +202,7 @@ class DefaultSpeedTestRepository @Inject constructor(
         }
     }
 
+    /** Tunable implementation details that should not leak into the domain contract. */
     private companion object {
         const val DEFAULT_BUFFER_SIZE = 64 * 1024
         const val UPLOAD_BUFFER_SIZE = 64 * 1024

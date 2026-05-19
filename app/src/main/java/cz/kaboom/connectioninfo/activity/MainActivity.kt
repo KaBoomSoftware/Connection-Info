@@ -11,11 +11,19 @@ import cz.kaboom.connectioninfo.presentation.main.MainViewModel
 import cz.kaboom.connectioninfo.ui.theme.ConnectionInfoTheme
 import dagger.hilt.android.AndroidEntryPoint
 
+/**
+ * Hosts the single Compose surface for the app.
+ *
+ * The activity starts with `AppLaunchTheme` from the manifest so Android can render the branded
+ * splash screen, then switches to `AppTheme` before composing the real UI.
+ */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    /** Presentation layer entry point scoped to this activity by Hilt. */
     private val viewModel: MainViewModel by viewModels()
 
+    /** Creates the Compose tree and binds it to the lifecycle-aware UI state flow. */
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppTheme)
         super.onCreate(savedInstanceState)

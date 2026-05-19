@@ -22,12 +22,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
+/**
+ * Unit coverage for the main presentation state reducer and connectivity reactions.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModelTest {
 
+    /** Replaces Main dispatcher so [MainViewModel] can use viewModelScope in unit tests. */
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
+    /** Verifies that becoming online triggers an immediate network info refresh. */
     @Test
     fun `connectivity fetches network details when network becomes available`() = runTest {
         val connectivity = FakeConnectivityObserver(initialValue = false)
@@ -47,6 +52,7 @@ class MainViewModelTest {
         assertEquals(details, viewModel.uiState.value.networkInfo)
     }
 
+    /** Verifies speed test latency and throughput events are folded into UI statistics. */
     @Test
     fun `speed test updates stats from repository progress`() = runTest {
         val viewModel = MainViewModel(
@@ -79,6 +85,7 @@ class MainViewModelTest {
         assertEquals(1, speedState.download.count)
     }
 
+    /** Verifies losing connectivity cancels active speed work and resets running state. */
     @Test
     fun `network loss stops active speed test`() = runTest {
         val connectivity = FakeConnectivityObserver(initialValue = true)
@@ -98,32 +105,43 @@ class MainViewModelTest {
         assertFalse(viewModel.uiState.value.speedTest.running)
     }
 
+    /** Controllable connectivity observer used by tests. */
     private class FakeConnectivityObserver(
         initialValue: Boolean
     ) : ConnectivityObserver {
+        /** Mutable test handle for network availability. */
         val connected = MutableStateFlow(initialValue)
+
+        /** Domain stream exposed to the ViewModel under test. */
         override val isConnected: Flow<Boolean> = connected
     }
 
+    /** Fake network repository returning a preconfigured result. */
     private class FakeNetworkInfoRepository(
         private val result: Result<NetworkDetails>
     ) : NetworkInfoRepository {
+        /** Returns [result] synchronously for deterministic tests. */
         override suspend fun refresh(): Result<NetworkDetails> = result
     }
 
+    /** Fake speed-test repository emitting a finite list of updates. */
     private class FakeSpeedTestRepository(
         private vararg val updates: SpeedTestUpdate
     ) : SpeedTestRepository {
+        /** Emits the configured update sequence. */
         override fun runSpeedTest(): Flow<SpeedTestUpdate> = flowOf(*updates)
     }
 
+    /** Fake speed-test repository that stays active until cancelled. */
     private class RunningSpeedTestRepository : SpeedTestRepository {
+        /** Emits Started, then suspends forever so cancellation behavior can be asserted. */
         override fun runSpeedTest(): Flow<SpeedTestUpdate> = flow {
             emit(SpeedTestUpdate.Started)
             awaitCancellation()
         }
     }
 
+    /** Representative successful network details fixture. */
     private fun sampleNetworkDetails() = NetworkDetails(
         transport = NetworkTransport.WIFI,
         internalIp = "2001:1AEB:7E80:AF00:3412:90FF:FE94:4E0C",

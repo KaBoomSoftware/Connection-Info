@@ -16,6 +16,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * Presentation coordinator for connectivity, network details, and speed-test state.
+ *
+ * The ViewModel exposes a single immutable [MainUiState] stream and translates repository events
+ * into stable state for Compose.
+ */
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val connectivityObserver: ConnectivityObserver,
@@ -23,16 +29,23 @@ class MainViewModel @Inject constructor(
     private val speedTestRepository: SpeedTestRepository
 ) : ViewModel() {
 
+    /** Mutable backing state kept private to preserve unidirectional data flow. */
     private val _uiState = MutableStateFlow(MainUiState())
+
+    /** Public state observed by the Compose screen. */
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
+    /** Active speed test collection job, if a test is running. */
     private var speedTestJob: Job? = null
+
+    /** Active network refresh job; cancelled when a newer refresh starts. */
     private var networkRefreshJob: Job? = null
 
     init {
         observeConnectivity()
     }
 
+    /** Handles UI intents from tabs, buttons, and refresh requests. */
     fun onAction(action: MainAction) {
         when (action) {
             is MainAction.SelectTab -> _uiState.update { it.copy(selectedTab = action.tab) }
@@ -41,6 +54,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    /** Keeps UI state synchronized with Android's validated connectivity stream. */
     private fun observeConnectivity() {
         viewModelScope.launch {
             connectivityObserver.isConnected.collect { connected ->
@@ -61,6 +75,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    /** Refreshes network info and stores either the latest details or an error message. */
     private fun refreshNetworkInfo() {
         networkRefreshJob?.cancel()
         networkRefreshJob = viewModelScope.launch {
@@ -74,6 +89,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    /** Starts a new speed test when possible or cancels the currently running one. */
     private fun toggleSpeedTest() {
         if (speedTestJob?.isActive == true) {
             stopSpeedTest()
@@ -82,6 +98,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    /** Collects repository events for a fresh speed test run. */
     private fun startSpeedTest() {
         speedTestJob?.cancel()
         speedTestJob = viewModelScope.launch {
@@ -91,12 +108,14 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    /** Cancels the speed test job and resets transient running/progress flags. */
     private fun stopSpeedTest() {
         speedTestJob?.cancel()
         speedTestJob = null
         _uiState.update { it.copy(speedTest = it.speedTest.stopped()) }
     }
 
+    /** Reduces one speed-test domain event into presentation state. */
     private fun reduceSpeedTestUpdate(update: SpeedTestUpdate) {
         when (update) {
             SpeedTestUpdate.Started -> _uiState.update {
@@ -124,6 +143,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    /** Adds a throughput sample to the matching phase while updating the gauge. */
     private fun SpeedTestUiState.withProgress(update: SpeedTestUpdate.Progress): SpeedTestUiState {
         val mbps = (update.bitsPerSecond / 1_000_000.0).toFloat()
         return when (update.phase) {
@@ -148,6 +168,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    /** Adds a latency sample and keeps the gauge idle during the ping phase. */
     private fun SpeedTestUiState.withLatency(update: SpeedTestUpdate.Latency): SpeedTestUiState {
         val milliseconds = update.milliseconds.toFloat()
         return copy(
@@ -159,6 +180,7 @@ class MainViewModel @Inject constructor(
         )
     }
 
+    /** Resets transient execution state while preserving collected metrics. */
     private fun SpeedTestUiState.stopped() = copy(
         running = false,
         phase = SpeedTestPhase.IDLE,
