@@ -9,8 +9,6 @@ import cz.kaboom.connectioninfo.domain.model.NetworkTransport
 import cz.kaboom.connectioninfo.domain.repository.NetworkInfoRepository
 import cz.kaboom.connectioninfo.dto.NetworkLookupDto
 import cz.kaboom.connectioninfo.di.modules.IoDispatcher
-import cz.kaboom.connectioninfo.di.modules.IpApi
-import cz.kaboom.connectioninfo.di.modules.LookupApi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -20,8 +18,7 @@ import javax.inject.Inject
 
 class DefaultNetworkInfoRepository @Inject constructor(
     @ApplicationContext context: Context,
-    @param:IpApi private val ipApi: NetworkLookupApi,
-    @param:LookupApi private val lookupApi: NetworkLookupApi,
+    private val networkLookupClient: NetworkLookupClient,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : NetworkInfoRepository {
 
@@ -33,12 +30,11 @@ class DefaultNetworkInfoRepository @Inject constructor(
         runCatching {
             require(isConnected()) { "Network is unavailable" }
 
-            val externalIp = ipApi.getMyExternalIp().requireBody("Cannot get external IP address")
+            val externalIp = networkLookupClient.getMyExternalIp()
                 .trim()
                 .also { require(it.length > MIN_IP_LENGTH) { "Invalid external IP address" } }
 
-            val lookup = lookupApi.getLookupData(externalIp)
-                .requireBody("Cannot get network lookup data")
+            val lookup = networkLookupClient.getLookupData(externalIp)
 
             NetworkDetails(
                 transport = currentTransport(),
@@ -92,11 +88,6 @@ class DefaultNetworkInfoRepository @Inject constructor(
         latitude = latitude,
         longitude = longitude
     )
-
-    private fun <T> retrofit2.Response<T>.requireBody(errorMessage: String): T {
-        if (!isSuccessful) error("$errorMessage: HTTP ${code()}")
-        return body() ?: error(errorMessage)
-    }
 
     private companion object {
         const val MIN_IP_LENGTH = 8

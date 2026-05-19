@@ -5,6 +5,19 @@ import cz.kaboom.connectioninfo.di.modules.IoDispatcher
 import cz.kaboom.connectioninfo.domain.model.SpeedTestPhase
 import cz.kaboom.connectioninfo.domain.model.SpeedTestUpdate
 import cz.kaboom.connectioninfo.domain.repository.SpeedTestRepository
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.onUpload
+import io.ktor.client.request.prepareGet
+import io.ktor.client.request.preparePost
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.http.ContentType
+import io.ktor.http.content.OutgoingContent
+import io.ktor.http.isSuccess
+import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.readAvailable
+import io.ktor.utils.io.writeFully
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.awaitClose
@@ -14,30 +27,21 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
-import okhttp3.Call
-import okhttp3.MediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody
-import okio.BufferedSink
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import kotlin.math.max
 import kotlin.math.min
 
 class DefaultSpeedTestRepository @Inject constructor(
-    private val client: OkHttpClient,
+    private val client: HttpClient,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : SpeedTestRepository {
 
     override fun runSpeedTest(): Flow<SpeedTestUpdate> = channelFlow {
-        val activeCall = AtomicReference<Call?>()
         val runner = launch(ioDispatcher) {
             try {
                 send(SpeedTestUpdate.Started)
-                runDownloadTest(activeCall) { trySend(it) }
-                runUploadTest(activeCall) { trySendBlocking(it) }
+                runDownloadTest { trySend(it) }
+                runUploadTest { trySendBlocking(it) }
                 send(SpeedTestUpdate.Finished)
             } catch (e: CancellationException) {
                 send(SpeedTestUpdate.Finished)
@@ -49,12 +53,10 @@ class DefaultSpeedTestRepository @Inject constructor(
 
         awaitClose {
             runner.cancel()
-            activeCall.getAndSet(null)?.cancel()
         }
     }
 
     private suspend fun runDownloadTest(
-        activeCall: AtomicReference<Call?>,
         onProgress: (SpeedTestUpdate.Progress) -> Unit
     ) {
         val startedAt = System.nanoTime()
@@ -63,17 +65,13 @@ class DefaultSpeedTestRepository @Inject constructor(
         var downloadedBytes = 0L
         var lastReportAt = 0L
 
-        val request = Request.Builder()
-            .url(Const.SPEED_TEST_DOWNLOAD_URL)
-            .build()
-
-        execute(request, activeCall).use { response ->
-            check(response.isSuccessful) { "Download failed: HTTP ${response.code}" }
-            val input = response.body.byteStream()
+        client.prepareGet(Const.SPEED_TEST_DOWNLOAD_URL).execute { response ->
+            check(response.status.isSuccess()) { "Download failed: HTTP ${response.status.value}" }
+            val channel = response.bodyAsChannel()
 
             while (System.nanoTime() - startedAt < durationNanos) {
                 currentCoroutineContext().ensureActive()
-                val read = input.read(buffer)
+                val read = channel.readAvailable(buffer, 0, buffer.size)
                 if (read == -1) break
 
                 downloadedBytes += read
@@ -89,26 +87,20 @@ class DefaultSpeedTestRepository @Inject constructor(
     }
 
     private suspend fun runUploadTest(
-        activeCall: AtomicReference<Call?>,
         onProgress: (SpeedTestUpdate.Progress) -> Unit
     ) {
         val startedAt = System.nanoTime()
         val durationNanos = TimeUnit.MILLISECONDS.toNanos(Const.UPLOAD_TEST_DURATION_MS)
-        val deadlineNanos = startedAt + durationNanos
         var uploadedBytes = 0L
 
-        val body = CountingRequestBody(Const.UPLOAD_FILE_SIZE, deadlineNanos) { bytes ->
-            uploadedBytes = bytes
-            onProgress(progress(SpeedTestPhase.UPLOAD, uploadedBytes, startedAt, System.nanoTime(), durationNanos))
-        }
-
-        val request = Request.Builder()
-            .url(Const.SPEED_TEST_UPLOAD_URL)
-            .post(body)
-            .build()
-
-        execute(request, activeCall).use { response ->
-            check(response.isSuccessful) { "Upload failed: HTTP ${response.code}" }
+        client.preparePost(Const.SPEED_TEST_UPLOAD_URL) {
+            setBody(SpeedTestUploadContent())
+            onUpload { bytesSentTotal, _ ->
+                uploadedBytes = bytesSentTotal
+                onProgress(progress(SpeedTestPhase.UPLOAD, uploadedBytes, startedAt, System.nanoTime(), durationNanos))
+            }
+        }.execute { response ->
+            check(response.status.isSuccess()) { "Upload failed: HTTP ${response.status.value}" }
         }
 
         waitUntilDeadline(SpeedTestPhase.UPLOAD, uploadedBytes, startedAt, durationNanos, onProgress)
@@ -128,15 +120,6 @@ class DefaultSpeedTestRepository @Inject constructor(
         }
     }
 
-    private fun execute(
-        request: Request,
-        activeCall: AtomicReference<Call?>
-    ): okhttp3.Response {
-        val call = client.newCall(request)
-        activeCall.set(call)
-        return call.execute().also { activeCall.compareAndSet(call, null) }
-    }
-
     private fun progress(
         phase: SpeedTestPhase,
         transferredBytes: Long,
@@ -152,35 +135,26 @@ class DefaultSpeedTestRepository @Inject constructor(
         )
     }
 
-    private class CountingRequestBody(
-        private val size: Int,
-        private val deadlineNanos: Long,
-        private val onProgress: (Long) -> Unit
-    ) : RequestBody() {
-        override fun contentType(): MediaType? = null
-        override fun contentLength(): Long = -1
+    private class SpeedTestUploadContent : OutgoingContent.WriteChannelContent() {
+        override val contentLength: Long = Const.UPLOAD_FILE_SIZE.toLong()
+        override val contentType: ContentType = ContentType.Application.OctetStream
 
-        override fun writeTo(sink: BufferedSink) {
-            val chunk = ByteArray(DEFAULT_BUFFER_SIZE)
-            var written = 0
-            var lastReportAt = 0L
+        override suspend fun writeTo(channel: ByteWriteChannel) {
+            val buffer = ByteArray(UPLOAD_BUFFER_SIZE)
+            var remainingBytes = contentLength
 
-            while (written < size && System.nanoTime() < deadlineNanos) {
-                val byteCount = min(chunk.size, size - written)
-                sink.write(chunk, 0, byteCount)
-                written += byteCount
-
-                val now = System.nanoTime()
-                if (now - lastReportAt >= REPORT_INTERVAL_NANOS || written >= size) {
-                    lastReportAt = now
-                    onProgress(written.toLong())
-                }
+            while (remainingBytes > 0) {
+                currentCoroutineContext().ensureActive()
+                val byteCount = min(buffer.size.toLong(), remainingBytes).toInt()
+                channel.writeFully(buffer, 0, byteCount)
+                remainingBytes -= byteCount
             }
         }
     }
 
     private companion object {
         const val DEFAULT_BUFFER_SIZE = 64 * 1024
+        const val UPLOAD_BUFFER_SIZE = 64 * 1024
         const val REPORT_INTERVAL_NANOS = 250_000_000L
     }
 }

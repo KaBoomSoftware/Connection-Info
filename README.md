@@ -16,7 +16,7 @@ The app is intentionally compact on the product side, but the implementation is 
 - Kotlin
 - Jetpack Compose
 - Coroutines and Flow
-- Retrofit and OkHttp
+- Ktor Client
 - Hilt
 - JUnit and kotlinx-coroutines-test
 
