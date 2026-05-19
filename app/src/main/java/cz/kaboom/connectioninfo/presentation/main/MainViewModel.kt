@@ -117,6 +117,10 @@ class MainViewModel @Inject constructor(
             is SpeedTestUpdate.Progress -> _uiState.update { state ->
                 state.copy(speedTest = state.speedTest.withProgress(update))
             }
+
+            is SpeedTestUpdate.Latency -> _uiState.update { state ->
+                state.copy(speedTest = state.speedTest.withLatency(update))
+            }
         }
     }
 
@@ -139,8 +143,20 @@ class MainViewModel @Inject constructor(
                 upload = upload.add(mbps)
             )
 
-            SpeedTestPhase.IDLE -> this
+            SpeedTestPhase.IDLE,
+            SpeedTestPhase.PING -> this
         }
+    }
+
+    private fun SpeedTestUiState.withLatency(update: SpeedTestUpdate.Latency): SpeedTestUiState {
+        val milliseconds = update.milliseconds.toFloat()
+        return copy(
+            running = true,
+            phase = SpeedTestPhase.PING,
+            gaugeValue = 0f,
+            progress = update.percent.coerceIn(0f, 100f) / 100f,
+            ping = ping.add(milliseconds)
+        )
     }
 
     private fun SpeedTestUiState.stopped() = copy(

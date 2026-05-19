@@ -2,6 +2,7 @@ package cz.kaboom.connectioninfo.domain.model
 
 enum class SpeedTestPhase {
     IDLE,
+    PING,
     DOWNLOAD,
     UPLOAD
 }
@@ -14,6 +15,11 @@ sealed interface SpeedTestUpdate {
         val phase: SpeedTestPhase,
         val percent: Float,
         val bitsPerSecond: Double
+    ) : SpeedTestUpdate
+
+    data class Latency(
+        val percent: Float,
+        val milliseconds: Double
     ) : SpeedTestUpdate
 
     data class Failed(

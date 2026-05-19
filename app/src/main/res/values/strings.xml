@@ -3,6 +3,8 @@
     <string name="app_label">Connection Info</string>
     <string name="fun_error">How do you get here?</string>
     <string name="speed_format">%.2f Mbps</string>
+    <string name="latency_format">%.0f ms</string>
+    <string name="ping_progress_format">Ping test progress: %.0f%%</string>
     <string name="dl_progress_format">Download speed test progress: %.0f%%</string>
     <string name="ul_progress_format">Upload speed test progress: %.0f%%</string>
     <string name="complete">Complete</string>
@@ -20,11 +22,15 @@
     <string name="start_test">Start test</string>
     <string name="init_error">Init error:</string>
     <string name="speed">Network speed</string>
+    <string name="ping">Ping</string>
+    <string name="latency">Latency</string>
+    <string name="best">Best</string>
     <string name="upload">Upload</string>
     <string name="download">Download</string>
     <string name="last">Last</string>
     <string name="max">Max</string>
     <string name="avg">Average</string>
+    <string name="avg_short">Avg</string>
     <string name="internal_ip">Internal IP</string>
     <string name="external_ip">External IP</string>
     <string name="isp">ISP</string>

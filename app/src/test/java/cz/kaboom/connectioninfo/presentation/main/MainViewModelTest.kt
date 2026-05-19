@@ -54,6 +54,10 @@ class MainViewModelTest {
             networkInfoRepository = FakeNetworkInfoRepository(Result.success(sampleNetworkDetails())),
             speedTestRepository = FakeSpeedTestRepository(
                 SpeedTestUpdate.Started,
+                SpeedTestUpdate.Latency(
+                    percent = 100f,
+                    milliseconds = 18.0
+                ),
                 SpeedTestUpdate.Progress(
                     phase = SpeedTestPhase.DOWNLOAD,
                     percent = 50f,
@@ -67,6 +71,9 @@ class MainViewModelTest {
 
         val speedState = viewModel.uiState.value.speedTest
         assertFalse(speedState.running)
+        assertEquals(18f, speedState.ping.current, 0.001f)
+        assertEquals(18f, speedState.ping.best, 0.001f)
+        assertEquals(1, speedState.ping.count)
         assertEquals(250f, speedState.download.current, 0.001f)
         assertEquals(250f, speedState.download.maximum, 0.001f)
         assertEquals(1, speedState.download.count)

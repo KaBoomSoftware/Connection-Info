@@ -7,9 +7,12 @@ import cz.kaboom.connectioninfo.domain.model.SpeedTestUpdate
 import cz.kaboom.connectioninfo.domain.repository.SpeedTestRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.onUpload
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.ContentType
 import io.ktor.http.content.OutgoingContent
@@ -40,6 +43,7 @@ class DefaultSpeedTestRepository @Inject constructor(
         val runner = launch(ioDispatcher) {
             try {
                 send(SpeedTestUpdate.Started)
+                runPingTest { trySend(it) }
                 runDownloadTest { trySend(it) }
                 runUploadTest { trySendBlocking(it) }
                 send(SpeedTestUpdate.Finished)
@@ -53,6 +57,29 @@ class DefaultSpeedTestRepository @Inject constructor(
 
         awaitClose {
             runner.cancel()
+        }
+    }
+
+    private suspend fun runPingTest(
+        onProgress: (SpeedTestUpdate.Latency) -> Unit
+    ) {
+        repeat(Const.PING_SAMPLE_COUNT) { index ->
+            currentCoroutineContext().ensureActive()
+            val startedAt = System.nanoTime()
+            val response = client.get(Const.SPEED_TEST_PING_URL) {
+                parameter(CACHE_BUSTER_PARAMETER, System.nanoTime())
+            }
+            check(response.status.isSuccess()) { "Ping failed: HTTP ${response.status.value}" }
+            response.bodyAsText()
+
+            val elapsedMillis = (System.nanoTime() - startedAt) / 1_000_000.0
+            onProgress(
+                SpeedTestUpdate.Latency(
+                    percent = ((index + 1).toFloat() / Const.PING_SAMPLE_COUNT.toFloat()) * 100f,
+                    milliseconds = elapsedMillis
+                )
+            )
+            kotlinx.coroutines.delay(PING_SAMPLE_DELAY_MS)
         }
     }
 
@@ -156,5 +183,7 @@ class DefaultSpeedTestRepository @Inject constructor(
         const val DEFAULT_BUFFER_SIZE = 64 * 1024
         const val UPLOAD_BUFFER_SIZE = 64 * 1024
         const val REPORT_INTERVAL_NANOS = 250_000_000L
+        const val PING_SAMPLE_DELAY_MS = 120L
+        const val CACHE_BUSTER_PARAMETER = "_"
     }
 }

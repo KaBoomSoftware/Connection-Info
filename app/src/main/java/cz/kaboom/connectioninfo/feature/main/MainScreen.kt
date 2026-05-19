@@ -54,6 +54,7 @@ import cz.kaboom.connectioninfo.domain.model.SpeedTestPhase
 import cz.kaboom.connectioninfo.presentation.main.MainAction
 import cz.kaboom.connectioninfo.presentation.main.MainTab
 import cz.kaboom.connectioninfo.presentation.main.MainUiState
+import cz.kaboom.connectioninfo.presentation.main.LatencyStats
 import cz.kaboom.connectioninfo.presentation.main.SpeedRateStats
 import cz.kaboom.connectioninfo.presentation.main.SpeedTestUiState
 import cz.kaboom.connectioninfo.ui.theme.ConnectionInfoColors
@@ -116,7 +117,7 @@ private fun AppTabs(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(96.dp),
+            .height(88.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         AppTabItem(
@@ -172,7 +173,9 @@ private fun SpeedTestScreen(
     onToggleTest: () -> Unit
 ) {
     val speedFormat = stringResource(R.string.speed_format)
+    val latencyFormat = stringResource(R.string.latency_format)
     val progressText = when (state.phase) {
+        SpeedTestPhase.PING -> stringResource(R.string.ping_progress_format, state.progress * 100f)
         SpeedTestPhase.DOWNLOAD -> stringResource(R.string.dl_progress_format, state.progress * 100f)
         SpeedTestPhase.UPLOAD -> stringResource(R.string.ul_progress_format, state.progress * 100f)
         SpeedTestPhase.IDLE -> ""
@@ -190,18 +193,20 @@ private fun SpeedTestScreen(
             maxValue = 500f,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp)
+                .height(260.dp)
         )
 
         Text(
             text = stringResource(R.string.speed),
             color = ConnectionInfoColors.TextPrimary,
             fontSize = 20.sp,
-            modifier = Modifier.padding(top = 4.dp, bottom = 14.dp)
+            modifier = Modifier.padding(bottom = 12.dp)
         )
 
         SpeedStatsPanel(
             speedFormat = speedFormat,
+            latencyFormat = latencyFormat,
+            ping = state.ping,
             download = state.download,
             upload = state.upload
         )
@@ -210,7 +215,7 @@ private fun SpeedTestScreen(
             progress = state.progress,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 18.dp)
+                .padding(top = 14.dp)
                 .height(6.dp)
         )
 
@@ -221,7 +226,7 @@ private fun SpeedTestScreen(
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp)
+                .padding(top = 10.dp)
         )
 
         if (internetAvailable) {
@@ -234,7 +239,7 @@ private fun SpeedTestScreen(
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 30.dp)
+                    .padding(top = 22.dp)
                     .height(64.dp)
             ) {
                 Text(
@@ -250,7 +255,7 @@ private fun SpeedTestScreen(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 30.dp)
+                    .padding(top = 22.dp)
                     .height(64.dp)
             ) {
                 Text(
@@ -309,7 +314,7 @@ private fun SpeedGauge(
     ) {
         Canvas(
             modifier = Modifier
-                .fillMaxWidth(0.72f)
+                .fillMaxWidth(0.68f)
                 .aspectRatio(1f)
         ) {
             val strokeWidth = 36.dp.toPx()
@@ -382,6 +387,8 @@ private fun SpeedGauge(
 @Composable
 private fun SpeedStatsPanel(
     speedFormat: String,
+    latencyFormat: String,
+    ping: LatencyStats,
     download: SpeedRateStats,
     upload: SpeedRateStats
 ) {
@@ -391,7 +398,20 @@ private fun SpeedStatsPanel(
         border = BorderStroke(1.dp, ConnectionInfoColors.SurfaceLine),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
+            PingSummaryRow(
+                latency = ping,
+                latencyFormat = latencyFormat
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp)
+                    .height(1.dp)
+                    .background(ConnectionInfoColors.SurfaceLine.copy(alpha = 0.75f))
+            )
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Spacer(modifier = Modifier.width(96.dp))
                 SpeedHeaderText(text = stringResource(R.string.last), modifier = Modifier.weight(1f))
@@ -407,6 +427,72 @@ private fun SpeedStatsPanel(
                 label = stringResource(R.string.upload),
                 stats = upload,
                 speedFormat = speedFormat
+            )
+        }
+    }
+}
+
+@Composable
+private fun PingSummaryRow(
+    latency: LatencyStats,
+    latencyFormat: String
+) {
+    val hasSamples = latency.count > 0
+    val current = latency.current.takeIf { hasSamples }?.let { formatLatency(it, latencyFormat) } ?: "-- ms"
+    val best = latency.best.takeIf { hasSamples }?.let { formatLatency(it, latencyFormat) } ?: "-- ms"
+    val average = latency.average.takeIf { hasSamples }?.let { formatLatency(it, latencyFormat) } ?: "-- ms"
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(46.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.ping),
+                color = ConnectionInfoColors.TextPrimary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = stringResource(R.string.latency),
+                color = ConnectionInfoColors.TextSecondary,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+        }
+        Text(
+            text = current,
+            color = ConnectionInfoColors.SpeedValue,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.End
+        )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 16.dp),
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "${stringResource(R.string.best)} $best",
+                color = ConnectionInfoColors.TextSecondary,
+                fontSize = 10.sp,
+                lineHeight = 12.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.End
+            )
+            Text(
+                text = "${stringResource(R.string.avg_short)} $average",
+                color = ConnectionInfoColors.TextSecondary,
+                fontSize = 10.sp,
+                lineHeight = 12.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.End,
+                modifier = Modifier.padding(top = 2.dp)
             )
         }
     }
@@ -433,7 +519,7 @@ private fun SpeedStatsRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(44.dp),
+            .height(40.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
@@ -525,6 +611,10 @@ private fun formatSpeed(value: Float, speedFormat: String): String {
     return String.format(Locale.getDefault(), speedFormat, value)
 }
 
+private fun formatLatency(value: Float, latencyFormat: String): String {
+    return String.format(Locale.getDefault(), latencyFormat, value)
+}
+
 private fun formatSpeedNumber(value: Float): String {
     return String.format(Locale.getDefault(), "%.2f", value)
 }
@@ -541,6 +631,7 @@ private fun RunningSpeedPreview() {
                     phase = SpeedTestPhase.DOWNLOAD,
                     gaugeValue = 327.5f,
                     progress = 0.56f,
+                    ping = LatencyStats(current = 18f, best = 14f, total = 84f, count = 5),
                     download = SpeedRateStats(current = 327.5f, maximum = 372.1f, total = 980f, count = 3)
                 )
             ),
