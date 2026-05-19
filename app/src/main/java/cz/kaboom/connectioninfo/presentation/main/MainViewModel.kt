@@ -9,6 +9,7 @@ import cz.kaboom.connectioninfo.domain.repository.NetworkInfoRepository
 import cz.kaboom.connectioninfo.domain.repository.SpeedTestRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -57,7 +58,8 @@ class MainViewModel @Inject constructor(
     /** Keeps UI state synchronized with Android's validated connectivity stream. */
     private fun observeConnectivity() {
         viewModelScope.launch {
-            connectivityObserver.isConnected.collect { connected ->
+            connectivityObserver.status.collect { status ->
+                val connected = status.isConnected
                 _uiState.update {
                     it.copy(
                         internetAvailable = connected,
@@ -79,13 +81,22 @@ class MainViewModel @Inject constructor(
     private fun refreshNetworkInfo() {
         networkRefreshJob?.cancel()
         networkRefreshJob = viewModelScope.launch {
-            networkInfoRepository.refresh()
-                .onSuccess { details ->
-                    _uiState.update { it.copy(networkInfo = details, errorMessage = null) }
-                }
-                .onFailure { throwable ->
-                    _uiState.update { it.copy(errorMessage = throwable.localizedMessage) }
-                }
+            repeat(NETWORK_REFRESH_ATTEMPTS) { attempt ->
+                networkInfoRepository.refresh()
+                    .onSuccess { details ->
+                        _uiState.update { it.copy(networkInfo = details, errorMessage = null) }
+                        return@launch
+                    }
+                    .onFailure { throwable ->
+                        if (attempt == NETWORK_REFRESH_ATTEMPTS - 1) {
+                            _uiState.update { it.copy(errorMessage = throwable.localizedMessage) }
+                        } else if (_uiState.value.internetAvailable) {
+                            delay(NETWORK_REFRESH_RETRY_DELAY_MS)
+                        } else {
+                            return@launch
+                        }
+                    }
+            }
         }
     }
 
@@ -187,4 +198,9 @@ class MainViewModel @Inject constructor(
         gaugeValue = 0f,
         progress = 0f
     )
+
+    private companion object {
+        const val NETWORK_REFRESH_ATTEMPTS = 3
+        const val NETWORK_REFRESH_RETRY_DELAY_MS = 1_000L
+    }
 }

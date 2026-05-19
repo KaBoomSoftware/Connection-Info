@@ -4,8 +4,8 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
-import android.net.NetworkRequest
 import cz.kaboom.connectioninfo.domain.repository.ConnectivityObserver
+import cz.kaboom.connectioninfo.domain.repository.ConnectivityStatus
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -15,10 +15,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import javax.inject.Inject
 
 /**
- * Observes the platform connectivity callbacks and exposes a stable online/offline stream.
+ * Observes the platform connectivity callbacks and exposes a stable active-network stream.
  *
- * The flow emits the current state immediately, then follows validated internet connectivity so the
- * UI does not offer tests while Android knows the network cannot reach the internet.
+ * The flow emits the current state immediately, then follows active network identity changes so the
+ * UI refreshes details when Android switches between Wi-Fi and cellular without going offline.
  */
 class AndroidConnectivityObserver @Inject constructor(
     @ApplicationContext context: Context
@@ -28,43 +28,52 @@ class AndroidConnectivityObserver @Inject constructor(
     private val connectivityManager =
         context.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
-    /** Emits distinct validated connectivity states and conflates fast callback bursts. */
-    override val isConnected: Flow<Boolean> = callbackFlow {
-        /** Reads the currently active network and verifies that Android has validated it. */
-        fun currentState(): Boolean = connectivityManager.activeNetwork
-            ?.let(connectivityManager::getNetworkCapabilities)
-            ?.isOnline()
-            ?: false
+    /** Emits distinct active network snapshots and conflates fast callback bursts. */
+    override val status: Flow<ConnectivityStatus> = callbackFlow {
+        /** Builds a status object from the callback network when Android has just promoted it. */
+        fun statusOf(
+            network: Network?,
+            capabilities: NetworkCapabilities?
+        ): ConnectivityStatus {
+            return ConnectivityStatus(
+                isConnected = capabilities?.isOnline() == true,
+                activeNetworkKey = network?.toString()
+            )
+        }
+
+        /** Reads the current default network and whether Android has validated it. */
+        fun currentStatus(): ConnectivityStatus {
+            val activeNetwork = connectivityManager.activeNetwork
+            val capabilities = activeNetwork?.let(connectivityManager::getNetworkCapabilities)
+
+            return statusOf(activeNetwork, capabilities)
+        }
 
         /** Bridges Android's callback API into the coroutine flow above. */
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                trySend(currentState())
+                trySend(statusOf(network, connectivityManager.getNetworkCapabilities(network)))
             }
 
             override fun onCapabilitiesChanged(
                 network: Network,
                 networkCapabilities: NetworkCapabilities
             ) {
-                trySend(networkCapabilities.isOnline())
+                trySend(statusOf(network, networkCapabilities))
             }
 
             override fun onLost(network: Network) {
-                trySend(currentState())
+                trySend(currentStatus())
             }
 
             override fun onUnavailable() {
-                trySend(false)
+                trySend(currentStatus())
             }
         }
 
-        trySend(currentState())
+        trySend(currentStatus())
 
-        val request = NetworkRequest.Builder()
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .build()
-
-        connectivityManager.registerNetworkCallback(request, callback)
+        connectivityManager.registerDefaultNetworkCallback(callback)
         awaitClose { connectivityManager.unregisterNetworkCallback(callback) }
     }
         .distinctUntilChanged()

@@ -6,6 +6,7 @@ import cz.kaboom.connectioninfo.domain.model.NetworkTransport
 import cz.kaboom.connectioninfo.domain.model.SpeedTestPhase
 import cz.kaboom.connectioninfo.domain.model.SpeedTestUpdate
 import cz.kaboom.connectioninfo.domain.repository.ConnectivityObserver
+import cz.kaboom.connectioninfo.domain.repository.ConnectivityStatus
 import cz.kaboom.connectioninfo.domain.repository.NetworkInfoRepository
 import cz.kaboom.connectioninfo.domain.repository.SpeedTestRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -46,10 +47,34 @@ class MainViewModelTest {
         assertFalse(viewModel.uiState.value.internetAvailable)
         assertNull(viewModel.uiState.value.networkInfo)
 
-        connectivity.connected.value = true
+        connectivity.status.value = ConnectivityStatus(isConnected = true, activeNetworkKey = "wifi")
 
         assertTrue(viewModel.uiState.value.internetAvailable)
         assertEquals(details, viewModel.uiState.value.networkInfo)
+    }
+
+    /** Verifies that switching active networks refreshes details even when connectivity stays true. */
+    @Test
+    fun `active network change refreshes network details while staying online`() = runTest {
+        val wifiDetails = sampleNetworkDetails(transport = NetworkTransport.WIFI, internalIp = "192.168.1.10")
+        val cellularDetails = sampleNetworkDetails(transport = NetworkTransport.CELLULAR, internalIp = "10.22.0.5")
+        val connectivity = FakeConnectivityObserver(
+            initialStatus = ConnectivityStatus(isConnected = true, activeNetworkKey = "wifi")
+        )
+        val repository = QueueNetworkInfoRepository(wifiDetails, cellularDetails)
+        val viewModel = MainViewModel(
+            connectivityObserver = connectivity,
+            networkInfoRepository = repository,
+            speedTestRepository = FakeSpeedTestRepository()
+        )
+
+        assertEquals(wifiDetails, viewModel.uiState.value.networkInfo)
+
+        connectivity.status.value = ConnectivityStatus(isConnected = true, activeNetworkKey = "cellular")
+
+        assertTrue(viewModel.uiState.value.internetAvailable)
+        assertEquals(cellularDetails, viewModel.uiState.value.networkInfo)
+        assertEquals(2, repository.refreshCount)
     }
 
     /** Verifies speed test latency and throughput events are folded into UI statistics. */
@@ -99,7 +124,7 @@ class MainViewModelTest {
 
         assertTrue(viewModel.uiState.value.speedTest.running)
 
-        connectivity.connected.value = false
+        connectivity.status.value = ConnectivityStatus(isConnected = false, activeNetworkKey = null)
 
         assertFalse(viewModel.uiState.value.internetAvailable)
         assertFalse(viewModel.uiState.value.speedTest.running)
@@ -107,13 +132,17 @@ class MainViewModelTest {
 
     /** Controllable connectivity observer used by tests. */
     private class FakeConnectivityObserver(
-        initialValue: Boolean
+        initialStatus: ConnectivityStatus
     ) : ConnectivityObserver {
-        /** Mutable test handle for network availability. */
-        val connected = MutableStateFlow(initialValue)
+        constructor(initialValue: Boolean) : this(
+            ConnectivityStatus(
+                isConnected = initialValue,
+                activeNetworkKey = if (initialValue) "initial" else null
+            )
+        )
 
         /** Domain stream exposed to the ViewModel under test. */
-        override val isConnected: Flow<Boolean> = connected
+        override val status = MutableStateFlow(initialStatus)
     }
 
     /** Fake network repository returning a preconfigured result. */
@@ -122,6 +151,22 @@ class MainViewModelTest {
     ) : NetworkInfoRepository {
         /** Returns [result] synchronously for deterministic tests. */
         override suspend fun refresh(): Result<NetworkDetails> = result
+    }
+
+    /** Fake network repository returning snapshots in order and retaining the last one. */
+    private class QueueNetworkInfoRepository(
+        private vararg val details: NetworkDetails
+    ) : NetworkInfoRepository {
+        /** Number of refreshes requested by the ViewModel. */
+        var refreshCount = 0
+            private set
+
+        /** Returns the next configured network snapshot for deterministic switch assertions. */
+        override suspend fun refresh(): Result<NetworkDetails> {
+            val index = refreshCount.coerceAtMost(details.lastIndex)
+            refreshCount += 1
+            return Result.success(details[index])
+        }
     }
 
     /** Fake speed-test repository emitting a finite list of updates. */
@@ -142,9 +187,12 @@ class MainViewModelTest {
     }
 
     /** Representative successful network details fixture. */
-    private fun sampleNetworkDetails() = NetworkDetails(
-        transport = NetworkTransport.WIFI,
-        internalIp = "2001:1AEB:7E80:AF00:3412:90FF:FE94:4E0C",
+    private fun sampleNetworkDetails(
+        transport: NetworkTransport = NetworkTransport.WIFI,
+        internalIp: String = "2001:1AEB:7E80:AF00:3412:90FF:FE94:4E0C"
+    ) = NetworkDetails(
+        transport = transport,
+        internalIp = internalIp,
         externalIp = "193.86.34.190",
         lookup = NetworkLookup(
             isp = "T-Mobile Czech Republic a.s.",

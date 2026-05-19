@@ -2,6 +2,7 @@ package cz.kaboom.connectioninfo.data.network
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.LinkAddress
 import android.net.NetworkCapabilities
 import cz.kaboom.connectioninfo.domain.model.NetworkDetails
 import cz.kaboom.connectioninfo.domain.model.NetworkLookup
@@ -12,7 +13,6 @@ import cz.kaboom.connectioninfo.di.modules.IoDispatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import java.net.NetworkInterface
 import java.util.Locale
 import javax.inject.Inject
 
@@ -40,17 +40,20 @@ class DefaultNetworkInfoRepository @Inject constructor(
         runCatching {
             require(isConnected()) { "Network is unavailable" }
 
-            val externalIp = networkLookupClient.getMyExternalIp()
-                .trim()
-                .also { require(it.length > MIN_IP_LENGTH) { "Invalid external IP address" } }
-
-            val lookup = networkLookupClient.getLookupData(externalIp)
+            val transport = currentTransport()
+            val internalIp = resolveInternalIp()
+            val externalLookup = runCatching {
+                val externalIp = networkLookupClient.getMyExternalIp()
+                    .trim()
+                    .also { require(it.length > MIN_IP_LENGTH) { "Invalid external IP address" } }
+                externalIp to networkLookupClient.getLookupData(externalIp).toDomain()
+            }
 
             NetworkDetails(
-                transport = currentTransport(),
-                internalIp = resolveInternalIp(),
-                externalIp = externalIp,
-                lookup = lookup.toDomain()
+                transport = transport,
+                internalIp = internalIp,
+                externalIp = externalLookup.getOrNull()?.first.orEmpty(),
+                lookup = externalLookup.getOrNull()?.second ?: NetworkLookup()
             )
         }
     }
@@ -78,12 +81,15 @@ class DefaultNetworkInfoRepository @Inject constructor(
         }
     }
 
-    /** Finds the first non-loopback local address and normalizes IPv6 zone suffixes away. */
+    /** Finds a local address from Android's active network and normalizes IPv6 zone suffixes away. */
     private fun resolveInternalIp(): String {
-        return NetworkInterface.getNetworkInterfaces()
-            .asSequence()
-            .flatMap { it.inetAddresses.asSequence() }
-            .firstOrNull { !it.isLoopbackAddress && !it.isLinkLocalAddress }
+        val activeNetwork = connectivityManager.activeNetwork ?: return ""
+
+        return connectivityManager.getLinkProperties(activeNetwork)
+            ?.linkAddresses
+            ?.asSequence()
+            ?.map(LinkAddress::getAddress)
+            ?.firstOrNull { !it.isLoopbackAddress && !it.isLinkLocalAddress }
             ?.hostAddress
             ?.substringBefore('%')
             ?.uppercase(Locale.getDefault())
