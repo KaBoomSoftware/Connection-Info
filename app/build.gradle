@@ -1,0 +1,130 @@
+apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+
+android {
+    namespace = "cz.kaboom.connectioninfo"
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    compileSdk = 36
+
+    def secretsPropertiesFile = rootProject.file("keystore.properties")
+    def secretProperties = new Properties()
+
+    if (secretsPropertiesFile.exists()) {
+        secretProperties.load(new FileInputStream(secretsPropertiesFile))
+    } else {
+        secretProperties.setProperty("releaseKeyAlias", System.getenv('releaseKeyAlias').toString())
+        secretProperties.setProperty("releaseKeyPassword", System.getenv('releaseKeyPassword').toString())
+        secretProperties.setProperty("releaseKeyStore", System.getenv('releaseKeyStore').toString())
+        secretProperties.setProperty("releaseStorePassword", System.getenv('releaseStorePassword').toString())
+    }
+    def versionPropsFile = file('version.properties')
+
+    def majorVersion
+    def minorVersion
+    def versionBuild
+    def versionString
+
+    if (versionPropsFile.canRead()) {
+        Properties versionProps = new Properties()
+        versionProps.load(new FileInputStream(versionPropsFile))
+        majorVersion = versionProps['MAJOR_VERSION'].toInteger()
+        minorVersion = versionProps['MINOR_VERSION'].toInteger()
+        versionBuild = versionProps['VERSION_BUILD'].toInteger()
+
+        versionString = majorVersion.toString() + "." + minorVersion.toString() + "." + versionBuild.toString()
+    } else {
+        throw new FileNotFoundException("Could not read version.properties!")
+    }
+
+    ext.autoIncrementBuildNumber = {
+        if (versionPropsFile.canRead()) {
+            Properties versionProps = new Properties()
+            versionProps.load(new FileInputStream(versionPropsFile))
+
+            majorVersion = versionProps['MAJOR_VERSION'].toInteger()
+            minorVersion = versionProps['MINOR_VERSION'].toInteger()
+            versionBuild = versionProps['VERSION_BUILD'].toInteger() + 1
+
+            versionString = majorVersion.toString() + "." + minorVersion.toString() + "." + versionBuild.toString()
+
+            versionProps['VERSION_BUILD'] = versionBuild.toString()
+            versionProps.store(versionPropsFile.newWriter(), null)
+        } else {
+            throw new FileNotFoundException("Could not read version.properties!")
+        }
+    }
+
+    defaultConfig {
+        applicationId "cz.kaboom.connectioninfo"
+        minSdk = 23
+        targetSdk = 36
+        versionCode versionBuild
+        versionName versionString
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        release {
+            keyAlias secretProperties['releaseKeyAlias']
+            keyPassword secretProperties['releaseKeyPassword']
+            storeFile file(secretProperties['releaseKeyStore'])
+            storePassword secretProperties['releaseStorePassword']
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig = signingConfigs.release
+        }
+    }
+
+    buildFeatures{
+        compose = true
+        buildConfig = true
+    }
+
+    gradle.taskGraph.whenReady { taskGraph ->
+        if (taskGraph.hasTask(":app:assembleRelease")) {
+            autoIncrementBuildNumber()
+        }
+    }
+
+
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'androidx.core:core-ktx:1.18.0'
+
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.3.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
+
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0'
+    implementation 'com.squareup.retrofit2:retrofit:3.0.0'
+    implementation 'com.squareup.retrofit2:converter-gson:3.0.0'
+    implementation 'com.squareup.retrofit2:converter-scalars:3.0.0'
+    implementation 'com.squareup.okhttp3:okhttp:5.3.2'
+    def composeBom = platform('androidx.compose:compose-bom:2026.05.00')
+    implementation composeBom
+    androidTestImplementation composeBom
+    implementation 'androidx.activity:activity-compose:1.13.0'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.ui:ui-tooling-preview'
+    implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.10.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.10.0'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0'
+    debugImplementation 'androidx.compose.ui:ui-tooling'
+    debugImplementation 'androidx.compose.ui:ui-test-manifest'
+    androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
+    implementation "io.insert-koin:koin-android:$koin_version"
+
+}
