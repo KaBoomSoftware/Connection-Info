@@ -3,15 +3,17 @@ package cz.kaboom.connectioninfo.activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cz.kaboom.connectioninfo.feature.main.ConnectionInfoApp
 import cz.kaboom.connectioninfo.presentation.main.MainViewModel
 import cz.kaboom.connectioninfo.ui.theme.ConnectionInfoTheme
-import org.koin.androidx.viewmodel.ext.android.viewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private val viewModel: MainViewModel by viewModel()
+    private val viewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

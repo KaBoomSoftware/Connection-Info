@@ -8,7 +8,7 @@ The app is intentionally compact on the product side, but the implementation is 
 - Unidirectional state flow through `StateFlow`
 - Coroutine and Flow based networking, connectivity, and speed test updates
 - Repository interfaces split from Android and network implementations
-- Koin dependency injection
+- Hilt dependency injection
 - Focused unit tests for presentation state and speed statistics
 
 ## Tech Stack
@@ -17,7 +17,7 @@ The app is intentionally compact on the product side, but the implementation is 
 - Jetpack Compose
 - Coroutines and Flow
 - Retrofit and OkHttp
-- Koin
+- Hilt
 - JUnit and kotlinx-coroutines-test
 
 ## Build

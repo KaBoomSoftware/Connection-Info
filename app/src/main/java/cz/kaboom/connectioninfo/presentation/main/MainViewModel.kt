@@ -7,14 +7,17 @@ import cz.kaboom.connectioninfo.domain.model.SpeedTestUpdate
 import cz.kaboom.connectioninfo.domain.repository.ConnectivityObserver
 import cz.kaboom.connectioninfo.domain.repository.NetworkInfoRepository
 import cz.kaboom.connectioninfo.domain.repository.SpeedTestRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class MainViewModel(
+@HiltViewModel
+class MainViewModel @Inject constructor(
     private val connectivityObserver: ConnectivityObserver,
     private val networkInfoRepository: NetworkInfoRepository,
     private val speedTestRepository: SpeedTestRepository

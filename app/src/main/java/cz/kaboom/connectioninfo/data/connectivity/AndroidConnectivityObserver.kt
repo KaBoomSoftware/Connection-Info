@@ -6,14 +6,16 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import cz.kaboom.connectioninfo.domain.repository.ConnectivityObserver
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
+import javax.inject.Inject
 
-class AndroidConnectivityObserver(
-    context: Context
+class AndroidConnectivityObserver @Inject constructor(
+    @ApplicationContext context: Context
 ) : ConnectivityObserver {
 
     private val connectivityManager =

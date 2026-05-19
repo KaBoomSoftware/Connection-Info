@@ -8,16 +8,21 @@ import cz.kaboom.connectioninfo.domain.model.NetworkLookup
 import cz.kaboom.connectioninfo.domain.model.NetworkTransport
 import cz.kaboom.connectioninfo.domain.repository.NetworkInfoRepository
 import cz.kaboom.connectioninfo.dto.NetworkLookupDto
+import cz.kaboom.connectioninfo.di.modules.IoDispatcher
+import cz.kaboom.connectioninfo.di.modules.IpApi
+import cz.kaboom.connectioninfo.di.modules.LookupApi
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.net.NetworkInterface
 import java.util.Locale
+import javax.inject.Inject
 
-class DefaultNetworkInfoRepository(
-    context: Context,
-    private val ipApi: NetworkLookupApi,
-    private val lookupApi: NetworkLookupApi,
-    private val ioDispatcher: CoroutineDispatcher
+class DefaultNetworkInfoRepository @Inject constructor(
+    @ApplicationContext context: Context,
+    @param:IpApi private val ipApi: NetworkLookupApi,
+    @param:LookupApi private val lookupApi: NetworkLookupApi,
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : NetworkInfoRepository {
 
     private val appContext = context.applicationContext

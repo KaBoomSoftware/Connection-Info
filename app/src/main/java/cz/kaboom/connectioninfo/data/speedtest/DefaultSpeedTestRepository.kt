@@ -1,6 +1,7 @@
 package cz.kaboom.connectioninfo.data.speedtest
 
 import cz.kaboom.connectioninfo.common.Const
+import cz.kaboom.connectioninfo.di.modules.IoDispatcher
 import cz.kaboom.connectioninfo.domain.model.SpeedTestPhase
 import cz.kaboom.connectioninfo.domain.model.SpeedTestUpdate
 import cz.kaboom.connectioninfo.domain.repository.SpeedTestRepository
@@ -21,12 +22,13 @@ import okhttp3.RequestBody
 import okio.BufferedSink
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import javax.inject.Inject
 import kotlin.math.max
 import kotlin.math.min
 
-class DefaultSpeedTestRepository(
+class DefaultSpeedTestRepository @Inject constructor(
     private val client: OkHttpClient,
-    private val ioDispatcher: CoroutineDispatcher
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : SpeedTestRepository {
 
     override fun runSpeedTest(): Flow<SpeedTestUpdate> = channelFlow {
