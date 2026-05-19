@@ -7,6 +7,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -62,12 +65,16 @@ import cz.kaboom.connectioninfo.ui.theme.ConnectionInfoTheme
 import java.util.Locale
 import kotlin.math.min
 
+private val TabSwipeThreshold = 72.dp
+
 @Composable
 fun ConnectionInfoApp(
     state: MainUiState,
     versionName: String,
     onAction: (MainAction) -> Unit
 ) {
+    val swipeThresholdPx = with(LocalDensity.current) { TabSwipeThreshold.toPx() }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -83,6 +90,30 @@ fun ConnectionInfoApp(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
+                .pointerInput(state.selectedTab, swipeThresholdPx) {
+                    var dragDistance = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = { dragDistance = 0f },
+                        onHorizontalDrag = { _, dragAmount ->
+                            dragDistance += dragAmount
+                        },
+                        onDragEnd = {
+                            val targetTab = when {
+                                dragDistance < -swipeThresholdPx && state.selectedTab == MainTab.SPEED_TEST ->
+                                    MainTab.NETWORK_INFO
+
+                                dragDistance > swipeThresholdPx && state.selectedTab == MainTab.NETWORK_INFO ->
+                                    MainTab.SPEED_TEST
+
+                                else -> null
+                            }
+
+                            targetTab?.let { onAction(MainAction.SelectTab(it)) }
+                            dragDistance = 0f
+                        },
+                        onDragCancel = { dragDistance = 0f }
+                    )
+                }
         ) {
             when (state.selectedTab) {
                 MainTab.SPEED_TEST -> SpeedTestScreen(
