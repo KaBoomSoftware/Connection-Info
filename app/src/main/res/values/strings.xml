@@ -49,4 +49,5 @@
     <string name="speed_test">Speed Test</string>
     <string name="conn_info">Connection Info</string>
     <string name="version">Version %s</string>
+    <string name="copyright">© Kaboom Software</string>
 </resources>

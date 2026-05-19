@@ -42,6 +42,7 @@ private val versionProps = Properties().apply {
 private val majorVersion = versionProps["MAJOR_VERSION"].toString().toInt()
 private val minorVersion = versionProps["MINOR_VERSION"].toString().toInt()
 private val versionBuild = versionProps["VERSION_BUILD"].toString().toInt()
+private val appVersionCode = majorVersion * 10_000 + minorVersion * 100 + versionBuild
 private val versionString = "$majorVersion.$minorVersion.$versionBuild"
 
 fun autoIncrementBuildNumber() {
@@ -66,7 +67,7 @@ android {
         applicationId = "cz.kaboom.connectioninfo"
         minSdk = 23
         targetSdk = 36
-        versionCode = versionBuild
+        versionCode = appVersionCode
         versionName = versionString
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -76,8 +76,8 @@ private val TabSwipeThreshold = 72.dp
 /**
  * Root composable for the application.
  *
- * It owns the tab chrome, animated page transitions, swipe navigation, and footer version label
- * while delegating feature content to focused child composables.
+ * It owns the tab chrome, animated page transitions, swipe navigation, and footer metadata while
+ * delegating feature content to focused child composables.
  */
 @Composable
 fun ConnectionInfoApp(
@@ -161,15 +161,26 @@ fun ConnectionInfoApp(
             }
         }
 
-        Text(
-            text = stringResource(R.string.version, versionName),
-            color = ConnectionInfoColors.TextMuted,
-            fontSize = 14.sp,
-            textAlign = TextAlign.Center,
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp)
-        )
+                .padding(vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.version, versionName),
+                color = ConnectionInfoColors.TextMuted,
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = stringResource(R.string.copyright),
+                color = ConnectionInfoColors.TextMuted,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 
@@ -722,7 +733,7 @@ private fun RunningSpeedPreview() {
                     download = SpeedRateStats(current = 327.5f, maximum = 372.1f, total = 980f, count = 3)
                 )
             ),
-            versionName = "1.0.272",
+            versionName = "2.0.0",
             onAction = {}
         )
     }
@@ -754,7 +765,7 @@ private fun NetworkInfoPreview() {
                     )
                 )
             ),
-            versionName = "1.0.272",
+            versionName = "2.0.0",
             onAction = {}
         )
     }
