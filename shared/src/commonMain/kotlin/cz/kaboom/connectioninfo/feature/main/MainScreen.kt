@@ -84,7 +84,7 @@ private object UiText {
     const val speedTest = "Speed Test"
     const val networkInfo = "Network Info"
     const val version = "Version %s"
-    const val copyright = "Copyright (C) KaBoom"
+    const val copyright = "Copyright © KaBoom Software"
     const val speed = "Speed"
     const val stopTest = "Stop Test"
     const val startTest = "Start Test"
