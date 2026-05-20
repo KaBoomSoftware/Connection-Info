@@ -20,3 +20,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "ConnectionInfo"
 include(":app")
+include(":shared")

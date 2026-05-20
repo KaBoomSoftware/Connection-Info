@@ -1,0 +1,49 @@
+name: ConnectionInfo
+options:
+  bundleIdPrefix: cz.kaboom
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    DEVELOPMENT_TEAM: 2N8QS7YDP2
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "6.0"
+targets:
+  iosApp:
+    type: application
+    platform: iOS
+    sources:
+      - iosApp
+    preBuildScripts:
+      - name: Build Shared KMP Framework
+        basedOnDependencyAnalysis: false
+        script: |
+          export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+          VERSION_FILE="$SRCROOT/../app/version.properties"
+          INFO_PLIST="$SRCROOT/iosApp/Info.plist"
+          MAJOR_VERSION=$(/usr/bin/awk -F= '$1 == "MAJOR_VERSION" { print $2 }' "$VERSION_FILE")
+          MINOR_VERSION=$(/usr/bin/awk -F= '$1 == "MINOR_VERSION" { print $2 }' "$VERSION_FILE")
+          VERSION_BUILD=$(/usr/bin/awk -F= '$1 == "VERSION_BUILD" { print $2 }' "$VERSION_FILE")
+          VERSION_NAME="$MAJOR_VERSION.$MINOR_VERSION.$VERSION_BUILD"
+          VERSION_CODE=$((MAJOR_VERSION * 10000 + MINOR_VERSION * 100 + VERSION_BUILD))
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION_NAME" "$INFO_PLIST"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION_CODE" "$INFO_PLIST"
+          cd "$SRCROOT/.."
+          ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: cz.kaboom.connectioninfo.ios
+        PRODUCT_NAME: ConnectionInfo
+        INFOPLIST_FILE: iosApp/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_DEBUG_DYLIB: NO
+        FRAMEWORK_SEARCH_PATHS:
+          - $(inherited)
+          - $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
+        OTHER_LDFLAGS:
+          - $(inherited)
+          - -framework
+          - Shared
+        LD_RUNPATH_SEARCH_PATHS:
+          - $(inherited)
+          - "@executable_path/Frameworks"

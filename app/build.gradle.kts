@@ -1,6 +1,5 @@
 import java.io.FileInputStream
 import java.io.FileNotFoundException
-import java.net.URI
 import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -8,13 +7,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
-    id("com.google.devtools.ksp")
-    id("com.google.dagger.hilt.android")
-    id("org.jetbrains.dokka")
 }
-
-private val hiltVersion = "2.58"
-private val ktorVersion = "3.5.0"
 
 private val secretsPropertiesFile = rootProject.file("keystore.properties")
 private fun signingEnvironmentValue(name: String): String = System.getenv(name).orEmpty()
@@ -113,60 +106,20 @@ gradle.taskGraph.whenReady {
 }
 
 dependencies {
-    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
+    implementation(project(":shared"))
     implementation("androidx.core:core-ktx:1.18.0")
 
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
-
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
-    implementation("io.ktor:ktor-client-android:$ktorVersion")
-    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
-    implementation("io.ktor:ktor-serialization-gson:$ktorVersion")
 
     val composeBom = platform("androidx.compose:compose-bom:2026.05.00")
     implementation(composeBom)
     androidTestImplementation(composeBom)
     implementation("androidx.activity:activity-compose:1.13.0")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0")
-    debugImplementation("androidx.compose.ui:ui-tooling")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-
-    implementation("com.google.dagger:hilt-android:$hiltVersion")
-    ksp("com.google.dagger:hilt-android-compiler:$hiltVersion")
-}
-
-dokka {
-    dokkaPublications {
-        html {
-            moduleName.set("Connection Info")
-            outputDirectory.set(layout.buildDirectory.dir("documentation/html"))
-        }
-    }
-    dokkaSourceSets {
-        named("main") {
-            reportUndocumented.set(false)
-            skipEmptyPackages.set(true)
-            suppressGeneratedFiles.set(true)
-            sourceLink {
-                localDirectory.set(file("src/main/java"))
-                remoteUrl.set(URI("https://github.com/KaBoomSoftware/Connection-Info/tree/main/app/src/main/java"))
-                remoteLineSuffix.set("#L")
-            }
-        }
-    }
-}
-
-tasks.register("buildProjectDocumentation") {
-    group = "documentation"
-    description = "Builds the project API documentation as Dokka HTML."
-    dependsOn(tasks.named("dokkaGeneratePublicationHtml"))
 }
