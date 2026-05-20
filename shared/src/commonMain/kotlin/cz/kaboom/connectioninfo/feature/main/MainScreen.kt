@@ -1,13 +1,9 @@
 package cz.kaboom.connectioninfo.feature.main
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -25,6 +21,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
@@ -38,9 +35,16 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -49,6 +53,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -57,6 +62,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import cz.kaboom.connectioninfo.domain.model.NetworkDetails
 import cz.kaboom.connectioninfo.domain.model.SpeedTestPhase
 import cz.kaboom.connectioninfo.presentation.main.MainAction
@@ -72,6 +78,8 @@ import kotlin.math.roundToInt
 
 /** Minimum horizontal drag distance required to switch tabs. */
 private val TabSwipeThreshold = 72.dp
+
+private const val TabTransitionDurationMillis = 360
 
 /** Values at or above this Mbps threshold are shown as Gbps in table cells. */
 private const val SPEED_GBPS_THRESHOLD_MBPS = 1_000f
@@ -424,24 +432,9 @@ fun ConnectionInfoApp(
                     )
                 }
         ) {
-            AnimatedContent(
-                targetState = selectedTab,
-                transitionSpec = {
-                    val direction = if (targetState.index > initialState.index) {
-                        AnimatedContentTransitionScope.SlideDirection.Left
-                    } else {
-                        AnimatedContentTransitionScope.SlideDirection.Right
-                    }
-
-                    slideIntoContainer(
-                        towards = direction,
-                        animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing)
-                    ) togetherWith slideOutOfContainer(
-                        towards = direction,
-                        animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing)
-                    ) using SizeTransform(clip = false)
-                },
-                label = "tabContentTransition"
+            SlidingTabContent(
+                selectedTab = selectedTab,
+                modifier = Modifier.fillMaxSize()
             ) { tab ->
                 when (tab) {
                     MainTab.SPEED_TEST -> SpeedTestScreen(
@@ -481,6 +474,79 @@ fun ConnectionInfoApp(
                 textAlign = TextAlign.Center
             )
         }
+        }
+    }
+}
+
+/**
+ * Slide transition that keeps working when Android's global animation duration scale is 0.
+ *
+ * Compose's regular tween-based transitions respect that system setting, which is generally
+ * correct but makes this app's tab change look broken on developer devices with animations off.
+ */
+@Composable
+private fun SlidingTabContent(
+    selectedTab: MainTab,
+    modifier: Modifier = Modifier,
+    content: @Composable (MainTab) -> Unit
+) {
+    var visibleTab by remember { mutableStateOf(selectedTab) }
+    var outgoingTab by remember { mutableStateOf<MainTab?>(null) }
+    var direction by remember { mutableStateOf(0) }
+    var progress by remember { mutableFloatStateOf(1f) }
+
+    LaunchedEffect(selectedTab) {
+        if (selectedTab == visibleTab && outgoingTab == null) {
+            progress = 1f
+            return@LaunchedEffect
+        }
+
+        val previousTab = visibleTab
+        direction = if (selectedTab.index > previousTab.index) 1 else -1
+        outgoingTab = previousTab
+        visibleTab = selectedTab
+        progress = 0f
+
+        val durationNanos = TabTransitionDurationMillis * 1_000_000L
+        val startedAt = withFrameNanos { it }
+        var rawProgress: Float
+
+        do {
+            val now = withFrameNanos { it }
+            rawProgress = ((now - startedAt).toFloat() / durationNanos).coerceIn(0f, 1f)
+            progress = FastOutSlowInEasing.transform(rawProgress)
+        } while (rawProgress < 1f)
+
+        progress = 1f
+        outgoingTab = null
+    }
+
+    BoxWithConstraints(
+        modifier = modifier.clipToBounds()
+    ) {
+        val widthPx = constraints.maxWidth
+        val activeDirection = direction.takeIf { outgoingTab != null } ?: 0
+        val enteringOffset = ((1f - progress) * widthPx * activeDirection).roundToInt()
+        val exitingOffset = (-progress * widthPx * activeDirection).roundToInt()
+
+        outgoingTab?.let { tab ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .offset { IntOffset(exitingOffset, 0) }
+                    .zIndex(0f)
+            ) {
+                content(tab)
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .offset { IntOffset(enteringOffset, 0) }
+                .zIndex(1f)
+        ) {
+            content(visibleTab)
         }
     }
 }

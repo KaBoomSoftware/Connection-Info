@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
 }
 
 /** Android lifecycle wrapper around the shared multiplatform presenter. */
-private class MainActivityViewModel(
+class MainActivityViewModel(
     application: Application
 ) : AndroidViewModel(application) {
     private val presenter: MainPresenter = createMainPresenter(application)
