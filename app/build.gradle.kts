@@ -71,7 +71,7 @@ android {
             keyPassword = secretProperties["releaseKeyPassword"].toString()
             secretProperties["releaseKeyStore"].toString()
                 .takeIf(String::isNotBlank)
-                ?.let { storeFile = file(it) }
+                ?.let { storeFile = rootProject.file(it) }
             storePassword = secretProperties["releaseStorePassword"].toString()
         }
     }

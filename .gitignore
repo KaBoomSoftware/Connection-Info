@@ -17,4 +17,5 @@
 .cxx
 *.apk
 keystore.properties
+/secrets/
 /app/secrets
