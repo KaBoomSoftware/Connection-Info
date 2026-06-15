@@ -18,7 +18,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
@@ -39,7 +38,7 @@ import kotlin.time.TimeSource
  */
 class DefaultSpeedTestRepository(
     private val client: HttpClient,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.Default
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : SpeedTestRepository {
 
     /** Starts a full speed test when collected and cancels network work when the collector stops. */
@@ -49,7 +48,7 @@ class DefaultSpeedTestRepository(
                 send(SpeedTestUpdate.Started)
                 runPingTest { trySend(it) }
                 runDownloadTest { trySend(it) }
-                runUploadTest { trySendBlocking(it) }
+                runUploadTest { trySend(it) }
                 send(SpeedTestUpdate.Finished)
             } catch (e: CancellationException) {
                 send(SpeedTestUpdate.Finished)
