@@ -17,8 +17,6 @@
 .cxx
 *.apk
 keystore.properties
-/secrets/
+/secrets/*
+!/secrets/.gitignore
 /app/secrets
-
-# local signing/release secrets
-secrets/
