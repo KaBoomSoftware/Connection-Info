@@ -33,4 +33,19 @@ object ConnectionInfoColors {
 
     /** Text color placed on top of bright accent buttons. */
     val ActionText = Color(0xFF12061F)
+
+    /** Gauge gradient: low-speed green anchor. */
+    val GaugeLow = Color(0xFF22C55E)
+
+    /** Gauge gradient: high-speed red peak. */
+    val GaugeHigh = Color(0xFFEF4444)
+
+    /** Gauge gradient: mid-speed amber. */
+    val GaugeMid = Color(0xFFF59E0B)
+
+    /** Gauge gradient: upper-mid yellow. */
+    val GaugeUpperMid = Color(0xFFF4D35E)
+
+    /** Gauge gradient: top-end lime wrap-around. */
+    val GaugeLime = Color(0xFF84CC16)
 }

@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
@@ -26,6 +25,11 @@ import androidx.compose.ui.unit.dp
 import cz.kaboom.connectioninfo.feature.main.MainLayoutSpec
 import cz.kaboom.connectioninfo.feature.main.formatSpeedNumber
 import cz.kaboom.connectioninfo.ui.theme.ConnectionInfoColors
+import cz.kaboom.connectioninfo.ui.theme.ConnectionInfoColors.GaugeLow
+import cz.kaboom.connectioninfo.ui.theme.ConnectionInfoColors.GaugeHigh
+import cz.kaboom.connectioninfo.ui.theme.ConnectionInfoColors.GaugeMid
+import cz.kaboom.connectioninfo.ui.theme.ConnectionInfoColors.GaugeUpperMid
+import cz.kaboom.connectioninfo.ui.theme.ConnectionInfoColors.GaugeLime
 import kotlin.math.min
 
 /** Animated semi-circular gauge for the current Mbps value. */
@@ -68,12 +72,12 @@ internal fun SpeedGauge(
             val progressStroke = Stroke(width = strokeWidth, cap = StrokeCap.Round)
             val progressBrush = Brush.sweepGradient(
                 colorStops = arrayOf(
-                    0.000f to Color(0xFF22C55E),
-                    0.125f to Color(0xFF22C55E),
-                    0.375f to Color(0xFFEF4444),
-                    0.625f to Color(0xFFF59E0B),
-                    0.875f to Color(0xFFF4D35E),
-                    1.000f to Color(0xFF84CC16)
+                    0.000f to GaugeLow,
+                    0.125f to GaugeLow,
+                    0.375f to GaugeHigh,
+                    0.625f to GaugeMid,
+                    0.875f to GaugeUpperMid,
+                    1.000f to GaugeLime
                 ),
                 center = Offset(size.width / 2f, size.height / 2f)
             )

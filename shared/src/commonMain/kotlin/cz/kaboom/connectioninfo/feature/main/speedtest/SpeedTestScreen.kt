@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cz.kaboom.connectioninfo.data.speedtest.SpeedTestConfig
 import cz.kaboom.connectioninfo.domain.model.speedtest.SpeedTestPhase
 import cz.kaboom.connectioninfo.feature.main.MainLayoutSpec
 import cz.kaboom.connectioninfo.feature.main.UiText
@@ -52,7 +53,7 @@ internal fun SpeedTestScreen(
         ) {
             SpeedGauge(
                 value = state.gaugeValue,
-                maxValue = 500f,
+                maxValue = SpeedTestConfig.gaugeMaxValue,
                 layoutSpec = layoutSpec,
                 modifier = Modifier
                     .fillMaxWidth()

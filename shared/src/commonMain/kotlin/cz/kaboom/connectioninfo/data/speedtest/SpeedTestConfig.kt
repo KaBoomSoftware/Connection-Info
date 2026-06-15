@@ -22,4 +22,7 @@ internal object SpeedTestConfig {
 
     /** Number of bytes streamed into the upload request body. */
     const val uploadFileSize = 50 * 1000000
+
+    /** Maximum speed displayed on the gauge in Mbps. */
+    const val gaugeMaxValue = 1000f
 }
