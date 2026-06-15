@@ -5,6 +5,7 @@ import cz.kaboom.connectioninfo.data.connectivity.AndroidConnectivityObserver
 import cz.kaboom.connectioninfo.data.network.DefaultNetworkInfoRepository
 import cz.kaboom.connectioninfo.data.network.remote.NetworkLookupClient
 import cz.kaboom.connectioninfo.data.speedtest.DefaultSpeedTestRepository
+import cz.kaboom.connectioninfo.data.network.networkJson
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -12,7 +13,6 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.serialization.json.Json
 
 /** Creates the shared presenter with Android-backed connectivity and network details. */
 fun createMainPresenter(context: Context): MainPresenter {
@@ -42,7 +42,3 @@ fun createMainPresenter(context: Context): MainPresenter {
     )
 }
 
-private val networkJson = Json {
-    ignoreUnknownKeys = true
-    coerceInputValues = true
-}

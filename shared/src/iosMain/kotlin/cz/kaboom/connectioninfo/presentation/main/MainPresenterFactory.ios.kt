@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.window.ComposeUIViewController
 import cz.kaboom.connectioninfo.data.connectivity.IosConnectivityObserver
 import cz.kaboom.connectioninfo.data.network.IosNetworkInfoRepository
+import cz.kaboom.connectioninfo.data.network.networkJson
 import cz.kaboom.connectioninfo.data.network.remote.NetworkLookupClient
 import cz.kaboom.connectioninfo.data.speedtest.DefaultSpeedTestRepository
 import cz.kaboom.connectioninfo.feature.main.ConnectionInfoApp
@@ -18,7 +19,6 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.serialization.json.Json
 import platform.Foundation.NSBundle
 import platform.UIKit.UIViewController
 
@@ -59,9 +59,4 @@ fun MainViewController(): UIViewController = ComposeUIViewController {
 
 private fun iosVersionName(): String {
     return NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: ""
-}
-
-private val networkJson = Json {
-    ignoreUnknownKeys = true
-    coerceInputValues = true
 }
