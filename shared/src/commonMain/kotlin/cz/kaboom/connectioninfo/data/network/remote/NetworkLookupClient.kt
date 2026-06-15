@@ -1,7 +1,7 @@
-package cz.kaboom.connectioninfo.data.network
+package cz.kaboom.connectioninfo.data.network.remote
 
-import cz.kaboom.connectioninfo.common.Const
-import cz.kaboom.connectioninfo.dto.NetworkLookupDto
+import cz.kaboom.connectioninfo.data.network.NetworkLookupServiceConfig
+import cz.kaboom.connectioninfo.data.network.remote.dto.NetworkLookupDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -19,7 +19,7 @@ class NetworkLookupClient(
 ) {
     /** Fetches the device's public IP address as plain text. */
     suspend fun getMyExternalIp(): String {
-        val response = client.get(Const.IPAPI_BASE_URL)
+        val response = client.get(NetworkLookupServiceConfig.externalIpUrl)
         check(response.status.isSuccess()) {
             "Cannot get external IP address: HTTP ${response.status.value}"
         }
@@ -28,7 +28,7 @@ class NetworkLookupClient(
 
     /** Fetches geolocation and ISP metadata for [ip]. */
     suspend fun getLookupData(ip: String): NetworkLookupDto {
-        val response = client.get("${Const.LOOKUP_BASE_URL}$ip")
+        val response = client.get("${NetworkLookupServiceConfig.lookupBaseUrl}$ip")
         check(response.status.isSuccess()) {
             "Cannot get network lookup data: HTTP ${response.status.value}"
         }

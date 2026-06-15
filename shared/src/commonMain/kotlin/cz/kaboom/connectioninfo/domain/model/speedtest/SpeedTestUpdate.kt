@@ -1,21 +1,4 @@
-package cz.kaboom.connectioninfo.domain.model
-
-/**
- * Current phase of the speed-test state machine.
- */
-enum class SpeedTestPhase {
-    /** No speed test is currently active. */
-    IDLE,
-
-    /** Latency samples are being collected. */
-    PING,
-
-    /** Download throughput is being measured. */
-    DOWNLOAD,
-
-    /** Upload throughput is being measured. */
-    UPLOAD
-}
+package cz.kaboom.connectioninfo.domain.model.speedtest
 
 /**
  * Streamed domain events emitted by [cz.kaboom.connectioninfo.domain.repository.SpeedTestRepository].

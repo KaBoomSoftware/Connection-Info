@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("org.jetbrains.compose")
@@ -13,7 +13,11 @@ private val coroutinesVersion = "1.11.0"
 private val serializationVersion = "1.11.0"
 
 kotlin {
-    androidTarget {
+    android {
+        namespace = "cz.kaboom.connectioninfo.shared"
+        compileSdk = 36
+        minSdk = 23
+        withHostTestBuilder {}.configure {}
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
         }
@@ -56,19 +60,5 @@ kotlin {
         iosMain.dependencies {
             implementation("io.ktor:ktor-client-darwin:$ktorVersion")
         }
-    }
-}
-
-android {
-    namespace = "cz.kaboom.connectioninfo.shared"
-    compileSdk = 36
-
-    defaultConfig {
-        minSdk = 23
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
     }
 }

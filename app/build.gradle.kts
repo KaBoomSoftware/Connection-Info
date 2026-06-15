@@ -1,11 +1,9 @@
 import java.io.FileInputStream
 import java.io.FileNotFoundException
 import java.util.Properties
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
@@ -90,12 +88,6 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
-    }
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 

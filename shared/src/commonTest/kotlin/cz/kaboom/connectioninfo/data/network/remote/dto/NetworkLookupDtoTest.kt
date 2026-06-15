@@ -1,4 +1,4 @@
-package cz.kaboom.connectioninfo.dto
+package cz.kaboom.connectioninfo.data.network.remote.dto
 
 import kotlinx.serialization.json.Json
 import kotlin.test.Test

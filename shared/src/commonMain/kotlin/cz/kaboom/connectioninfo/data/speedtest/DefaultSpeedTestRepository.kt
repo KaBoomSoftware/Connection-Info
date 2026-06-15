@@ -1,8 +1,7 @@
 package cz.kaboom.connectioninfo.data.speedtest
 
-import cz.kaboom.connectioninfo.common.Const
-import cz.kaboom.connectioninfo.domain.model.SpeedTestPhase
-import cz.kaboom.connectioninfo.domain.model.SpeedTestUpdate
+import cz.kaboom.connectioninfo.domain.model.speedtest.SpeedTestPhase
+import cz.kaboom.connectioninfo.domain.model.speedtest.SpeedTestUpdate
 import cz.kaboom.connectioninfo.domain.repository.SpeedTestRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.onUpload
@@ -13,12 +12,8 @@ import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.bodyAsChannel
-import io.ktor.http.ContentType
-import io.ktor.http.content.OutgoingContent
 import io.ktor.http.isSuccess
-import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.readAvailable
-import io.ktor.utils.io.writeFully
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -29,9 +24,9 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
-import kotlin.random.Random
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.random.Random
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 
@@ -73,10 +68,10 @@ class DefaultSpeedTestRepository(
     private suspend fun runPingTest(
         onProgress: (SpeedTestUpdate.Latency) -> Unit
     ) {
-        repeat(Const.PING_SAMPLE_COUNT) { index ->
+        repeat(SpeedTestConfig.pingSampleCount) { index ->
             currentCoroutineContext().ensureActive()
             val startedAt = TimeSource.Monotonic.markNow()
-            val response = client.get(Const.SPEED_TEST_PING_URL) {
+            val response = client.get(SpeedTestConfig.pingUrl) {
                 parameter(CACHE_BUSTER_PARAMETER, Random.nextLong())
             }
             check(response.status.isSuccess()) { "Ping failed: HTTP ${response.status.value}" }
@@ -85,7 +80,7 @@ class DefaultSpeedTestRepository(
             val elapsedMillis = startedAt.elapsedNow().inWholeNanoseconds / 1_000_000.0
             onProgress(
                 SpeedTestUpdate.Latency(
-                    percent = ((index + 1).toFloat() / Const.PING_SAMPLE_COUNT.toFloat()) * 100f,
+                    percent = ((index + 1).toFloat() / SpeedTestConfig.pingSampleCount.toFloat()) * 100f,
                     milliseconds = elapsedMillis
                 )
             )
@@ -98,12 +93,12 @@ class DefaultSpeedTestRepository(
         onProgress: (SpeedTestUpdate.Progress) -> Unit
     ) {
         val startedAt = TimeSource.Monotonic.markNow()
-        val durationNanos = Const.DOWNLOAD_TEST_DURATION_MS * NANOS_PER_MILLISECOND
+        val durationNanos = SpeedTestConfig.downloadDurationMs * NANOS_PER_MILLISECOND
         val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
         var downloadedBytes = 0L
         var lastReportAt = 0L
 
-        client.prepareGet(Const.SPEED_TEST_DOWNLOAD_URL).execute { response ->
+        client.prepareGet(SpeedTestConfig.downloadUrl).execute { response ->
             check(response.status.isSuccess()) { "Download failed: HTTP ${response.status.value}" }
             val channel = response.bodyAsChannel()
 
@@ -129,10 +124,10 @@ class DefaultSpeedTestRepository(
         onProgress: (SpeedTestUpdate.Progress) -> Unit
     ) {
         val startedAt = TimeSource.Monotonic.markNow()
-        val durationNanos = Const.UPLOAD_TEST_DURATION_MS * NANOS_PER_MILLISECOND
+        val durationNanos = SpeedTestConfig.uploadDurationMs * NANOS_PER_MILLISECOND
         var uploadedBytes = 0L
 
-        client.preparePost(Const.SPEED_TEST_UPLOAD_URL) {
+        client.preparePost(SpeedTestConfig.uploadUrl) {
             setBody(SpeedTestUploadContent())
             onUpload { bytesSentTotal, _ ->
                 uploadedBytes = bytesSentTotal
@@ -186,33 +181,11 @@ class DefaultSpeedTestRepository(
      * Streaming request body used by the upload phase.
      *
      * Ktor asks this content to write chunks into the request channel, keeping memory usage stable
-     * regardless of [Const.UPLOAD_FILE_SIZE].
+     * regardless of [SpeedTestConfig.uploadFileSize].
      */
-    private class SpeedTestUploadContent : OutgoingContent.WriteChannelContent() {
-        /** Exact payload size sent to the upload endpoint. */
-        override val contentLength: Long = Const.UPLOAD_FILE_SIZE.toLong()
-
-        /** Binary payload marker understood by the Cloudflare upload endpoint. */
-        override val contentType: ContentType = ContentType.Application.OctetStream
-
-        /** Writes zero-filled chunks until the configured upload size is reached. */
-        override suspend fun writeTo(channel: ByteWriteChannel) {
-            val buffer = ByteArray(UPLOAD_BUFFER_SIZE)
-            var remainingBytes = contentLength
-
-            while (remainingBytes > 0) {
-                currentCoroutineContext().ensureActive()
-                val byteCount = min(buffer.size.toLong(), remainingBytes).toInt()
-                channel.writeFully(buffer, 0, byteCount)
-                remainingBytes -= byteCount
-            }
-        }
-    }
-
     /** Tunable implementation details that should not leak into the domain contract. */
     private companion object {
         const val DEFAULT_BUFFER_SIZE = 64 * 1024
-        const val UPLOAD_BUFFER_SIZE = 64 * 1024
         const val REPORT_INTERVAL_NANOS = 250_000_000L
         const val PING_SAMPLE_DELAY_MS = 120L
         const val CACHE_BUSTER_PARAMETER = "_"

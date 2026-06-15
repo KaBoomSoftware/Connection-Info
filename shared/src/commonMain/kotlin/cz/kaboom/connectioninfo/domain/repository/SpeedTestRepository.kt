@@ -1,6 +1,6 @@
 package cz.kaboom.connectioninfo.domain.repository
 
-import cz.kaboom.connectioninfo.domain.model.SpeedTestUpdate
+import cz.kaboom.connectioninfo.domain.model.speedtest.SpeedTestUpdate
 import kotlinx.coroutines.flow.Flow
 
 /**

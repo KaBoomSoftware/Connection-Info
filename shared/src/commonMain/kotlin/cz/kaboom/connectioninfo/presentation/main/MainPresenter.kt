@@ -1,7 +1,7 @@
 package cz.kaboom.connectioninfo.presentation.main
 
-import cz.kaboom.connectioninfo.domain.model.SpeedTestPhase
-import cz.kaboom.connectioninfo.domain.model.SpeedTestUpdate
+import cz.kaboom.connectioninfo.domain.model.speedtest.SpeedTestPhase
+import cz.kaboom.connectioninfo.domain.model.speedtest.SpeedTestUpdate
 import cz.kaboom.connectioninfo.domain.repository.ConnectivityObserver
 import cz.kaboom.connectioninfo.domain.repository.NetworkInfoRepository
 import cz.kaboom.connectioninfo.domain.repository.SpeedTestRepository
@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 /**
  * Presentation coordinator for connectivity, network details, and speed-test state.
  *
- * The ViewModel exposes a single immutable [MainUiState] stream and translates repository events
+ * The presenter exposes a single immutable [MainUiState] stream and translates repository events
  * into stable state for Compose.
  */
 class MainPresenter(

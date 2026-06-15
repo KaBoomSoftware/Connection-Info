@@ -4,12 +4,11 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.LinkAddress
 import android.net.NetworkCapabilities
-import cz.kaboom.connectioninfo.domain.model.NetworkDetails
-import cz.kaboom.connectioninfo.domain.model.NetworkLookup
-import cz.kaboom.connectioninfo.domain.model.NetworkTransport
+import cz.kaboom.connectioninfo.data.network.remote.NetworkLookupClient
+import cz.kaboom.connectioninfo.domain.model.network.NetworkDetails
+import cz.kaboom.connectioninfo.domain.model.network.NetworkLookup
+import cz.kaboom.connectioninfo.domain.model.network.NetworkTransport
 import cz.kaboom.connectioninfo.domain.repository.NetworkInfoRepository
-import cz.kaboom.connectioninfo.dto.NetworkLookupDto
-import cz.kaboom.connectioninfo.dto.asDisplayString
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -42,9 +41,7 @@ class DefaultNetworkInfoRepository(
             val transport = currentTransport()
             val internalIp = resolveInternalIp()
             val externalLookup = runCatching {
-                val externalIp = networkLookupClient.getMyExternalIp()
-                    .trim()
-                    .also { require(it.length > MIN_IP_LENGTH) { "Invalid external IP address" } }
+                val externalIp = networkLookupClient.getMyExternalIp().requireValidExternalIp()
                 externalIp to networkLookupClient.getLookupData(externalIp).toDomain()
             }
 
@@ -93,23 +90,5 @@ class DefaultNetworkInfoRepository(
             ?.substringBefore('%')
             ?.uppercase(Locale.getDefault())
             .orEmpty()
-    }
-
-    /** Converts the transport DTO into the immutable domain object used by presentation code. */
-    private fun NetworkLookupDto.toDomain() = NetworkLookup(
-        isp = isp,
-        organization = organization,
-        city = city,
-        region = region,
-        regionName = regionName,
-        country = country,
-        countryCode = countryCode,
-        latitude = latitude.asDisplayString(),
-        longitude = longitude.asDisplayString()
-    )
-
-    /** Internal validation threshold that filters obviously malformed external IP responses. */
-    private companion object {
-        const val MIN_IP_LENGTH = 8
     }
 }

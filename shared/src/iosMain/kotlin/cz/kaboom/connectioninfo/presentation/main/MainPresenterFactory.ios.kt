@@ -7,7 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.window.ComposeUIViewController
 import cz.kaboom.connectioninfo.data.connectivity.IosConnectivityObserver
 import cz.kaboom.connectioninfo.data.network.IosNetworkInfoRepository
-import cz.kaboom.connectioninfo.data.network.NetworkLookupClient
+import cz.kaboom.connectioninfo.data.network.remote.NetworkLookupClient
 import cz.kaboom.connectioninfo.data.speedtest.DefaultSpeedTestRepository
 import cz.kaboom.connectioninfo.feature.main.ConnectionInfoApp
 import cz.kaboom.connectioninfo.ui.theme.ConnectionInfoTheme

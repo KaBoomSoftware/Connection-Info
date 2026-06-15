@@ -1,10 +1,10 @@
 package cz.kaboom.connectioninfo.presentation.main
 
-import cz.kaboom.connectioninfo.domain.model.NetworkDetails
-import cz.kaboom.connectioninfo.domain.model.NetworkLookup
-import cz.kaboom.connectioninfo.domain.model.NetworkTransport
-import cz.kaboom.connectioninfo.domain.model.SpeedTestPhase
-import cz.kaboom.connectioninfo.domain.model.SpeedTestUpdate
+import cz.kaboom.connectioninfo.domain.model.network.NetworkDetails
+import cz.kaboom.connectioninfo.domain.model.network.NetworkLookup
+import cz.kaboom.connectioninfo.domain.model.network.NetworkTransport
+import cz.kaboom.connectioninfo.domain.model.speedtest.SpeedTestPhase
+import cz.kaboom.connectioninfo.domain.model.speedtest.SpeedTestUpdate
 import cz.kaboom.connectioninfo.domain.repository.ConnectivityObserver
 import cz.kaboom.connectioninfo.domain.repository.ConnectivityStatus
 import cz.kaboom.connectioninfo.domain.repository.NetworkInfoRepository

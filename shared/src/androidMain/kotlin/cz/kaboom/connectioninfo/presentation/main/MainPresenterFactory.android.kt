@@ -3,7 +3,7 @@ package cz.kaboom.connectioninfo.presentation.main
 import android.content.Context
 import cz.kaboom.connectioninfo.data.connectivity.AndroidConnectivityObserver
 import cz.kaboom.connectioninfo.data.network.DefaultNetworkInfoRepository
-import cz.kaboom.connectioninfo.data.network.NetworkLookupClient
+import cz.kaboom.connectioninfo.data.network.remote.NetworkLookupClient
 import cz.kaboom.connectioninfo.data.speedtest.DefaultSpeedTestRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
