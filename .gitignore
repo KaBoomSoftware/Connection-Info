@@ -19,3 +19,6 @@
 keystore.properties
 /secrets/
 /app/secrets
+
+# local signing/release secrets
+secrets/
