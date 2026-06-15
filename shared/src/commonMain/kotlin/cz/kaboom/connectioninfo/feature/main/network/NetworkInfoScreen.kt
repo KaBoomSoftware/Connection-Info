@@ -16,6 +16,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -103,7 +105,8 @@ private fun NetworkInfoRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = layoutSpec.networkRowVerticalPadding),
+            .padding(vertical = layoutSpec.networkRowVerticalPadding)
+            .semantics(mergeDescendants = true) { contentDescription = "$label: $value" },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(

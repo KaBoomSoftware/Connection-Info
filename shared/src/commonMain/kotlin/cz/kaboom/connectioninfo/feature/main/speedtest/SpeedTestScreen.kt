@@ -16,6 +16,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -95,6 +97,7 @@ internal fun SpeedTestScreen(
             )
 
             if (internetAvailable) {
+                val buttonLabel = if (state.running) UiText.stopTest else UiText.startTest
                 Button(
                     onClick = onToggleTest,
                     shape = RoundedCornerShape(6.dp),
@@ -106,9 +109,10 @@ internal fun SpeedTestScreen(
                         .fillMaxWidth()
                         .padding(top = layoutSpec.actionTopPadding)
                         .height(layoutSpec.buttonHeight)
+                        .semantics { contentDescription = buttonLabel }
                 ) {
                     Text(
-                        text = (if (state.running) UiText.stopTest else UiText.startTest).uppercase(),
+                        text = buttonLabel.uppercase(),
                         fontSize = layoutSpec.actionTextSize,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.sp
@@ -121,6 +125,7 @@ internal fun SpeedTestScreen(
                         .fillMaxWidth()
                         .padding(top = layoutSpec.actionTopPadding)
                         .height(layoutSpec.buttonHeight)
+                        .semantics { contentDescription = UiText.networkUnavailable }
                 ) {
                     Text(
                         text = UiText.networkUnavailable.uppercase(),
