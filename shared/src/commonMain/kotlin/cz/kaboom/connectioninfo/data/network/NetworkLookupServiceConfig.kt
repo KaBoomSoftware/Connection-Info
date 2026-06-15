@@ -6,5 +6,5 @@ internal object NetworkLookupServiceConfig {
     const val externalIpUrl = "https://api.ipify.org"
 
     /** IP geolocation lookup endpoint; the target IP is appended to this base URL. */
-    const val lookupBaseUrl = "http://ip-api.com/json/"
+    const val lookupBaseUrl = "https://ip-api.com/json/"
 }
