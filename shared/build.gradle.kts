@@ -6,6 +6,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("org.jetbrains.compose")
+    id("dev.zacsweers.metro")
 }
 
 private val ktorVersion = "3.5.0"
@@ -44,6 +45,7 @@ kotlin {
             implementation("io.ktor:ktor-client-core:$ktorVersion")
             implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
             implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+            implementation("dev.zacsweers.metro:runtime:1.2.1")
         }
 
         commonTest.dependencies {
