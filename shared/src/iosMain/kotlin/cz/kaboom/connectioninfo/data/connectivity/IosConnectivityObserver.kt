@@ -2,6 +2,7 @@ package cz.kaboom.connectioninfo.data.connectivity
 
 import cz.kaboom.connectioninfo.domain.repository.ConnectivityObserver
 import cz.kaboom.connectioninfo.domain.repository.ConnectivityStatus
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -13,7 +14,7 @@ import platform.Network.nw_path_status_satisfied
 import platform.darwin.dispatch_queue_create
 import platform.darwin.DISPATCH_QUEUE_SERIAL
 
-class IosConnectivityObserver : ConnectivityObserver {
+class IosConnectivityObserver @Inject constructor() : ConnectivityObserver {
     override val status: Flow<ConnectivityStatus> = callbackFlow {
         val monitor = NWPathMonitor()
         val queue = dispatch_queue_create("connectivity", DISPATCH_QUEUE_SERIAL)

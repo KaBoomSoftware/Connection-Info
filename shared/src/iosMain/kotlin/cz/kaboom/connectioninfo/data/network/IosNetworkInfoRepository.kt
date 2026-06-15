@@ -4,6 +4,7 @@ import cz.kaboom.connectioninfo.data.network.remote.NetworkLookupClient
 import cz.kaboom.connectioninfo.domain.model.network.NetworkDetails
 import cz.kaboom.connectioninfo.domain.model.network.NetworkTransport
 import cz.kaboom.connectioninfo.domain.repository.NetworkInfoRepository
+import dev.zacsweers.metro.Inject
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.CPointerVar
@@ -31,7 +32,7 @@ import platform.posix.sockaddr_in6
 
 /** iOS implementation combining the public IP lookup service with shared domain models. */
 @OptIn(ExperimentalForeignApi::class)
-class IosNetworkInfoRepository(
+class IosNetworkInfoRepository @Inject constructor(
     private val networkLookupClient: NetworkLookupClient
 ) : NetworkInfoRepository {
 

@@ -3,6 +3,7 @@ package cz.kaboom.connectioninfo.data.speedtest
 import cz.kaboom.connectioninfo.domain.model.speedtest.SpeedTestPhase
 import cz.kaboom.connectioninfo.domain.model.speedtest.SpeedTestUpdate
 import cz.kaboom.connectioninfo.domain.repository.SpeedTestRepository
+import dev.zacsweers.metro.Inject
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.onUpload
 import io.ktor.client.request.get
@@ -36,7 +37,7 @@ import kotlin.time.TimeSource
  * is used for all network calls, and the upload body is streamed to avoid allocating the full
  * payload in memory.
  */
-class DefaultSpeedTestRepository(
+class DefaultSpeedTestRepository @Inject constructor(
     private val client: HttpClient,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : SpeedTestRepository {

@@ -2,6 +2,7 @@ package cz.kaboom.connectioninfo.data.network.remote
 
 import cz.kaboom.connectioninfo.data.network.NetworkLookupServiceConfig
 import cz.kaboom.connectioninfo.data.network.remote.dto.NetworkLookupDto
+import dev.zacsweers.metro.Inject
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -14,7 +15,7 @@ import io.ktor.http.isSuccess
  * Keeping endpoint-level calls here lets repositories stay focused on composing domain models and
  * keeps HTTP status validation close to the transport boundary.
  */
-class NetworkLookupClient(
+class NetworkLookupClient @Inject constructor(
     private val client: HttpClient
 ) {
     /** Fetches the device's public IP address as plain text. */

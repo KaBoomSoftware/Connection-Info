@@ -5,9 +5,9 @@ import cz.kaboom.connectioninfo.domain.model.speedtest.SpeedTestUpdate
 import cz.kaboom.connectioninfo.domain.repository.ConnectivityObserver
 import cz.kaboom.connectioninfo.domain.repository.NetworkInfoRepository
 import cz.kaboom.connectioninfo.domain.repository.SpeedTestRepository
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
  * The presenter exposes a single immutable [MainUiState] stream and translates repository events
  * into stable state for Compose.
  */
-class MainPresenter(
+class MainPresenter @Inject constructor(
     private val connectivityObserver: ConnectivityObserver,
     private val networkInfoRepository: NetworkInfoRepository,
     private val speedTestRepository: SpeedTestRepository,
@@ -44,17 +44,6 @@ class MainPresenter(
     init {
         observeConnectivity()
     }
-
-    constructor(
-        connectivityObserver: ConnectivityObserver,
-        networkInfoRepository: NetworkInfoRepository,
-        speedTestRepository: SpeedTestRepository
-    ) : this(
-        connectivityObserver = connectivityObserver,
-        networkInfoRepository = networkInfoRepository,
-        speedTestRepository = speedTestRepository,
-        coroutineScope = CoroutineScope(SupervisorJob())
-    )
 
     /** Handles UI intents from tabs, buttons, and refresh requests. */
     fun onAction(action: MainAction) {

@@ -9,6 +9,7 @@ import cz.kaboom.connectioninfo.domain.model.network.NetworkDetails
 import cz.kaboom.connectioninfo.domain.model.network.NetworkLookup
 import cz.kaboom.connectioninfo.domain.model.network.NetworkTransport
 import cz.kaboom.connectioninfo.domain.repository.NetworkInfoRepository
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -20,7 +21,7 @@ import java.util.Locale
  * All work is moved to the injected IO dispatcher because it touches platform network interfaces
  * and performs remote lookups through [NetworkLookupClient].
  */
-class DefaultNetworkInfoRepository(
+class DefaultNetworkInfoRepository @Inject constructor(
     context: Context,
     private val networkLookupClient: NetworkLookupClient,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO

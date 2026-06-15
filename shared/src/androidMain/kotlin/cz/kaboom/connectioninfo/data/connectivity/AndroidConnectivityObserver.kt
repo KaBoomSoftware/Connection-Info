@@ -6,6 +6,7 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import cz.kaboom.connectioninfo.domain.repository.ConnectivityObserver
 import cz.kaboom.connectioninfo.domain.repository.ConnectivityStatus
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -18,7 +19,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
  * The flow emits the current state immediately, then follows active network identity changes so the
  * UI refreshes details when Android switches between Wi-Fi and cellular without going offline.
  */
-class AndroidConnectivityObserver(
+class AndroidConnectivityObserver @Inject constructor(
     context: Context
 ) : ConnectivityObserver {
 
