@@ -1,6 +1,7 @@
 package cz.kaboom.connectioninfo.feature.main
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import cz.kaboom.connectioninfo.domain.model.network.NetworkDetails
 import cz.kaboom.connectioninfo.domain.model.network.NetworkLookup
 import cz.kaboom.connectioninfo.domain.model.network.NetworkTransport
@@ -13,7 +14,6 @@ import cz.kaboom.connectioninfo.presentation.main.MainUiState
 import cz.kaboom.connectioninfo.presentation.main.SpeedRateStats
 import cz.kaboom.connectioninfo.presentation.main.SpeedTestUiState
 import cz.kaboom.connectioninfo.ui.theme.ConnectionInfoTheme
-import org.jetbrains.compose.ui.tooling.preview.Preview
 
 private val previewLayoutSpec = mainLayoutSpec(390.dp(), 844.dp())
 
@@ -45,8 +45,8 @@ private fun AppRunningPreview() {
                     phase = SpeedTestPhase.DOWNLOAD,
                     gaugeValue = 187.4f,
                     progress = 0.6f,
-                    ping = LatencyStats(count = 5, current = 18.0, best = 15.0, average = 17.5),
-                    download = SpeedRateStats(count = 10, current = 187.4f, maximum = 210.0f, average = 180.0f)
+                    ping = LatencyStats(count = 5, current = 18.0f, best = 15.0f),
+                    download = SpeedRateStats(count = 10, current = 187.4f, maximum = 210.0f)
                 )
             ),
             versionName = "2.0.0",
@@ -134,8 +134,8 @@ private fun SpeedTestDownloadPreview() {
                 phase = SpeedTestPhase.DOWNLOAD,
                 gaugeValue = 342.5f,
                 progress = 0.45f,
-                ping = LatencyStats(count = 5, current = 12.0, best = 10.0, average = 11.5),
-                download = SpeedRateStats(count = 8, current = 342.5f, maximum = 380.0f, average = 330.0f)
+                ping = LatencyStats(count = 5, current = 12.0f, best = 10.0f, total = 57.5f),
+                download = SpeedRateStats(count = 8, current = 342.5f, maximum = 380.0f, total = 2640.0f)
             ),
             internetAvailable = true,
             onToggleTest = {},

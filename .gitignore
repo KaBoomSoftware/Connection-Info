@@ -20,3 +20,4 @@ keystore.properties
 /secrets/*
 !/secrets/.gitignore
 /app/secrets
+/secrets/
