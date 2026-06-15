@@ -55,6 +55,7 @@ kotlin {
             implementation("androidx.core:core-ktx:1.18.0")
             implementation("io.ktor:ktor-client-android:$ktorVersion")
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion")
+            implementation(compose.uiTooling)
         }
 
         iosMain.dependencies {
