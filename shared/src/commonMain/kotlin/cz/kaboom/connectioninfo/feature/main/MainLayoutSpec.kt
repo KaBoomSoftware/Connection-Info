@@ -54,6 +54,55 @@ internal data class MainLayoutSpec(
     val networkValueLineHeight: TextUnit
 )
 
+/** Default (normal phone) layout used as the baseline for all breakpoints. */
+private val NormalSpec = MainLayoutSpec(
+    contentMaxWidth = 520.dp,
+    horizontalPadding = 20.dp,
+    speedVerticalPadding = 12.dp,
+    networkVerticalPadding = 22.dp,
+    tabHeight = 76.dp,
+    tabItemHeight = 64.dp,
+    tabFontSize = 15.sp,
+    tabLetterSpacing = 0.sp,
+    tabIndicatorWidth = 108.dp,
+    tabIndicatorTopSpacing = 14.dp,
+    footerVerticalPadding = 10.dp,
+    versionTextSize = 13.sp,
+    copyrightTextSize = 11.sp,
+    gaugeHeight = 230.dp,
+    gaugeFillFraction = 0.64f,
+    gaugeStrokeWidth = 32.dp,
+    gaugeValueLargeTextSize = 46.sp,
+    gaugeValueSmallTextSize = 40.sp,
+    gaugeUnitTextSize = 15.sp,
+    sectionTitleTextSize = 18.sp,
+    statsHorizontalPadding = 16.dp,
+    statsVerticalPadding = 12.dp,
+    statsDividerVerticalPadding = 8.dp,
+    statsLabelWidth = 88.dp,
+    statsRowHeight = 38.dp,
+    pingRowHeight = 44.dp,
+    pingLabelTextSize = 15.sp,
+    pingSubtitleTextSize = 11.sp,
+    pingCurrentTextSize = 19.sp,
+    pingMetaTextSize = 10.sp,
+    pingMetaLineHeight = 12.sp,
+    statsHeaderTextSize = 12.sp,
+    statsLabelTextSize = 15.sp,
+    statsValueTextSize = 11.sp,
+    statsValueCompactTextSize = 9.sp,
+    buttonHeight = 58.dp,
+    actionTopPadding = 18.dp,
+    actionTextSize = 14.sp,
+    progressTopPadding = 12.dp,
+    networkLabelWidth = 120.dp,
+    networkCardHorizontalPadding = 14.dp,
+    networkCardVerticalPadding = 13.dp,
+    networkRowVerticalPadding = 5.dp,
+    networkTextSize = 13.sp,
+    networkValueLineHeight = 18.sp
+)
+
 /** Picks the layout density from the actual available window size. */
 internal fun mainLayoutSpec(maxWidth: Dp, maxHeight: Dp): MainLayoutSpec {
     val tinyPhone = maxWidth <= 375.dp || maxHeight <= 700.dp
@@ -61,7 +110,7 @@ internal fun mainLayoutSpec(maxWidth: Dp, maxHeight: Dp): MainLayoutSpec {
     val expanded = maxWidth >= 700.dp || maxHeight >= 900.dp
 
     return when {
-        tinyPhone -> MainLayoutSpec(
+        tinyPhone -> NormalSpec.copy(
             contentMaxWidth = 390.dp,
             horizontalPadding = 12.dp,
             speedVerticalPadding = 28.dp,
@@ -69,7 +118,6 @@ internal fun mainLayoutSpec(maxWidth: Dp, maxHeight: Dp): MainLayoutSpec {
             tabHeight = 54.dp,
             tabItemHeight = 48.dp,
             tabFontSize = 12.sp,
-            tabLetterSpacing = 0.sp,
             tabIndicatorWidth = 82.dp,
             tabIndicatorTopSpacing = 7.dp,
             footerVerticalPadding = 4.dp,
@@ -87,7 +135,6 @@ internal fun mainLayoutSpec(maxWidth: Dp, maxHeight: Dp): MainLayoutSpec {
             statsDividerVerticalPadding = 4.dp,
             statsLabelWidth = 72.dp,
             statsRowHeight = 30.dp,
-            pingRowHeight = 44.dp,
             pingLabelTextSize = 13.sp,
             pingSubtitleTextSize = 9.sp,
             pingCurrentTextSize = 16.sp,
@@ -109,7 +156,7 @@ internal fun mainLayoutSpec(maxWidth: Dp, maxHeight: Dp): MainLayoutSpec {
             networkValueLineHeight = 14.sp
         )
 
-        compact -> MainLayoutSpec(
+        compact -> NormalSpec.copy(
             contentMaxWidth = 430.dp,
             horizontalPadding = 14.dp,
             speedVerticalPadding = 24.dp,
@@ -117,7 +164,6 @@ internal fun mainLayoutSpec(maxWidth: Dp, maxHeight: Dp): MainLayoutSpec {
             tabHeight = 60.dp,
             tabItemHeight = 52.dp,
             tabFontSize = 13.sp,
-            tabLetterSpacing = 0.sp,
             tabIndicatorWidth = 88.dp,
             tabIndicatorTopSpacing = 8.dp,
             footerVerticalPadding = 6.dp,
@@ -135,7 +181,6 @@ internal fun mainLayoutSpec(maxWidth: Dp, maxHeight: Dp): MainLayoutSpec {
             statsDividerVerticalPadding = 5.dp,
             statsLabelWidth = 78.dp,
             statsRowHeight = 32.dp,
-            pingRowHeight = 44.dp,
             pingLabelTextSize = 15.sp,
             pingSubtitleTextSize = 10.sp,
             pingCurrentTextSize = 18.sp,
@@ -157,7 +202,7 @@ internal fun mainLayoutSpec(maxWidth: Dp, maxHeight: Dp): MainLayoutSpec {
             networkValueLineHeight = 16.sp
         )
 
-        expanded -> MainLayoutSpec(
+        expanded -> NormalSpec.copy(
             contentMaxWidth = 760.dp,
             horizontalPadding = 44.dp,
             speedVerticalPadding = 34.dp,
@@ -165,7 +210,6 @@ internal fun mainLayoutSpec(maxWidth: Dp, maxHeight: Dp): MainLayoutSpec {
             tabHeight = 104.dp,
             tabItemHeight = 84.dp,
             tabFontSize = 18.sp,
-            tabLetterSpacing = 0.sp,
             tabIndicatorWidth = 138.dp,
             tabIndicatorTopSpacing = 20.dp,
             footerVerticalPadding = 16.dp,
@@ -205,52 +249,6 @@ internal fun mainLayoutSpec(maxWidth: Dp, maxHeight: Dp): MainLayoutSpec {
             networkValueLineHeight = 21.sp
         )
 
-        else -> MainLayoutSpec(
-            contentMaxWidth = 520.dp,
-            horizontalPadding = 20.dp,
-            speedVerticalPadding = 12.dp,
-            networkVerticalPadding = 22.dp,
-            tabHeight = 76.dp,
-            tabItemHeight = 64.dp,
-            tabFontSize = 15.sp,
-            tabLetterSpacing = 0.sp,
-            tabIndicatorWidth = 108.dp,
-            tabIndicatorTopSpacing = 14.dp,
-            footerVerticalPadding = 10.dp,
-            versionTextSize = 13.sp,
-            copyrightTextSize = 11.sp,
-            gaugeHeight = 230.dp,
-            gaugeFillFraction = 0.64f,
-            gaugeStrokeWidth = 32.dp,
-            gaugeValueLargeTextSize = 46.sp,
-            gaugeValueSmallTextSize = 40.sp,
-            gaugeUnitTextSize = 15.sp,
-            sectionTitleTextSize = 18.sp,
-            statsHorizontalPadding = 16.dp,
-            statsVerticalPadding = 12.dp,
-            statsDividerVerticalPadding = 8.dp,
-            statsLabelWidth = 88.dp,
-            statsRowHeight = 38.dp,
-            pingRowHeight = 44.dp,
-            pingLabelTextSize = 15.sp,
-            pingSubtitleTextSize = 11.sp,
-            pingCurrentTextSize = 19.sp,
-            pingMetaTextSize = 10.sp,
-            pingMetaLineHeight = 12.sp,
-            statsHeaderTextSize = 12.sp,
-            statsLabelTextSize = 15.sp,
-            statsValueTextSize = 11.sp,
-            statsValueCompactTextSize = 9.sp,
-            buttonHeight = 58.dp,
-            actionTopPadding = 18.dp,
-            actionTextSize = 14.sp,
-            progressTopPadding = 12.dp,
-            networkLabelWidth = 120.dp,
-            networkCardHorizontalPadding = 14.dp,
-            networkCardVerticalPadding = 13.dp,
-            networkRowVerticalPadding = 5.dp,
-            networkTextSize = 13.sp,
-            networkValueLineHeight = 18.sp
-        )
+        else -> NormalSpec
     }
 }
